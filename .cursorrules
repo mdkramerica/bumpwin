@@ -1,0 +1,21 @@
+# Project: BumpWin
+
+## Branding Guidelines (Strict)
+* **Name:** BumpWin (CamelCase).
+* **Vibe:** Aggressive, Triumphant, High-Contrast. "Robinhood for Travel."
+* **Colors:** * Primary Bg: `bg-slate-900` (The Void).
+    * Primary Text: `text-white` or `text-slate-50`.
+    * Accent: `text-lime-400` / `bg-lime-400` / `border-lime-400` (Neon Lime).
+* **Typography:** * Headings: `font-display` (Space Grotesk or similar).
+    * Body: `font-sans` (Geist Sans or Inter).
+
+## Coding Standards
+* **Tech Stack:** Next.js 14+ (App Router), Tailwind CSS, Framer Motion, Supabase, Stripe.
+* **Mobile First:** Design for the thumb zone. Large buttons.
+* **Security:** * Enable RLS (Row Level Security) on ALL tables.
+    * Never log PII (Personally Identifiable Information).
+* **Stripe:** Use Server Actions for checkout creation. Never expose Secret Keys.
+
+## Component Specifics
+* **"Misery Meter":** Must use `framer-motion`. States: Calm (Green), Rage (Orange), WINNER (Neon Lime + Glitch Effect).
+* **"Paywall":** Show the math visually ($600 - $19 = $581 Profit).
