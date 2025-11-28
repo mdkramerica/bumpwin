@@ -1,4 +1,5 @@
 
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import MiseryMeter from "@/components/dashboard/misery-meter";
@@ -7,6 +8,7 @@ import ClaimLetter from "@/components/dashboard/claim-letter";
 import BountyCard from "@/components/viral/bounty-card";
 import SocialShare from "@/components/viral/social-share";
 import { addFlight } from "@/app/actions";
+import { Plus, History } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -60,12 +62,14 @@ export default async function DashboardPage({
   const currentDelay = latestTrip ? 200 : 0; // Hardcoded "Winner" delay for demo if trip exists
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-6">
+    <div className="min-h-screen bg-slate-900 text-white p-6 pb-24">
       <div className="max-w-md mx-auto space-y-8">
         
         {/* Header */}
         <header className="flex justify-between items-center">
-          <h1 className="text-xl font-bold font-display text-lime-400">BUMPWIN</h1>
+          <Link href="/" className="text-xl font-bold font-display text-lime-400 hover:opacity-80">
+            BUMPWIN
+          </Link>
           <div className="text-xs text-slate-500">{user.email}</div>
         </header>
 
@@ -147,6 +151,47 @@ export default async function DashboardPage({
               />
             </section>
           </div>
+        )}
+        
+        {/* 5. Claims History / Reset */}
+        {trips && trips.length > 0 && (
+          <section className="border-t border-slate-800 pt-8 mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-400 flex items-center gap-2">
+                <History className="w-4 h-4" />
+                YOUR HISTORY
+              </h3>
+              <Link href="/dashboard?new=true" className="text-xs text-lime-400 hover:text-lime-300 flex items-center gap-1">
+                 <Plus className="w-3 h-3" />
+                 Track New Flight
+              </Link>
+            </div>
+            
+            <div className="space-y-3">
+              {trips.map((trip) => {
+                const claim = trip.claims?.[0];
+                return (
+                  <div key={trip.id} className="bg-slate-800/50 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-sm">{trip.airline_code} {trip.flight_number}</div>
+                      <div className="text-xs text-slate-500">{new Date(trip.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div className="text-right">
+                      {claim?.is_unlocked ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-lime-400/10 text-lime-400">
+                          UNLOCKED
+                        </span>
+                      ) : (
+                         <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-700 text-slate-400">
+                          {trip.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         )}
 
       </div>
