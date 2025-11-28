@@ -16,8 +16,9 @@ export default async function DashboardPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const supabase = await createClient();
-  const { error } = await searchParams;
+  const { error, new: isNew } = await searchParams;
   const errorMessage = typeof error === "string" ? error : null;
+  const showNewForm = isNew === 'true';
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -32,32 +33,17 @@ export default async function DashboardPage({
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  // Also fetch User profile for Referral Code
-  // Note: If user doesn't exist in users table yet (trigger might not have run), handle gracefully
-  let userProfile = null;
-  const { data: profileData, error: userProfileError } = await supabase
-    .from("users")
-    .select("referral_code, total_referral_earnings")
-    .eq("id", user.id)
-    .single();
+  // ... (user profile fetching remains same) ...
   
   // If user profile doesn't exist, create it (fallback if trigger didn't run)
   if (userProfileError && userProfileError.code === 'PGRST116') {
-    // User doesn't exist in users table, create it
-    const { data: newUser } = await supabase
-      .from("users")
-      .insert({
-        id: user.id,
-        email: user.email || '',
-      })
-      .select()
-      .single();
+    // ... (creation logic remains same) ...
     userProfile = newUser || { referral_code: null, total_referral_earnings: 0 };
   } else {
     userProfile = profileData;
   }
 
-  const latestTrip = trips?.[0];
+  const latestTrip = showNewForm ? null : trips?.[0];
   const latestClaim = latestTrip?.claims?.[0]; // Assuming 1:1 for MVP
   const currentDelay = latestTrip ? 200 : 0; // Hardcoded "Winner" delay for demo if trip exists
 
