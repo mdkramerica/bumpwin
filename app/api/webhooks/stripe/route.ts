@@ -29,39 +29,39 @@ export async function POST(req: Request) {
     const claimId = session.metadata?.claimId;
     const userId = session.metadata?.userId;
 
+    console.log(`[WEBHOOK] Processing Event: ${event.type} for Session: ${session.id}`);
+    console.log(`[WEBHOOK] Metadata:`, session.metadata);
+
     if (!claimId || !userId) {
-        console.error("Webhook missing metadata");
+        console.error("[WEBHOOK ERROR] Missing metadata (claimId or userId)");
         return new NextResponse("Missing metadata", { status: 400 });
     }
 
-    console.log(`💰 Payment received for Claim: ${claimId}`);
+    console.log(`[WEBHOOK] 💰 Payment confirmed for Claim: ${claimId}`);
 
     // Unlock the Claim in Supabase
-    // Note: We use the SERVICE ROLE key pattern implicitly if using a robust setup,
-    // but here we are using the server client which uses cookies (User Context).
-    // PROBLEM: The webhook does NOT have the user's cookies. It is a server-to-server call.
-    // We need a Supabase Client with ADMIN privileges (Service Role) to update the DB 
-    // without a logged-in user.
-    
-    // TEMPORARY FIX for MVP: 
-    // We will define a createAdminClient helper inline or assume public access for now? 
-    // No, that's insecure. 
-    // Let's use the SUPABASE_SERVICE_ROLE_KEY directly here.
-    
     const supabaseAdmin = createAdminClient();
 
-    const { error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("claims")
       .update({ 
         is_unlocked: true, 
         status: "PAID_UNLOCK",
         stripe_session_id: session.id 
       })
-      .eq("id", claimId);
-
+      .eq("id", claimId)
+      .select();
+    
     if (error) {
-      console.error("Supabase Update Error:", error);
+      console.error("[WEBHOOK ERROR] Supabase Update Failed:", error);
       return new NextResponse("Database Error", { status: 500 });
+    }
+    
+    if (!data || data.length === 0) {
+         console.error("[WEBHOOK ERROR] Update succeeded but no rows returned. Claim ID might be wrong or deleted.");
+         // This helps debug if RLS or ID mismatch is the issue
+    } else {
+         console.log("[WEBHOOK] ✅ Claim unlocked successfully:", data);
     }
   }
 
