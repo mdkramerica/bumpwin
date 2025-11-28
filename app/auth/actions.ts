@@ -28,9 +28,13 @@ export async function signup(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const headersList = await headers();
-  const origin = headersList.get("origin");
+  const host = headersList.get("host");
+  const protocol = headersList.get("x-forwarded-proto") || "http";
+  const origin = headersList.get("origin") || `${protocol}://${host}`;
 
-  const { error } = await supabase.auth.signUp({
+  console.log("Attempting signup for:", email);
+
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -43,13 +47,21 @@ export async function signup(formData: FormData) {
     redirect(`/login?message=${encodeURIComponent(error.message)}`);
   }
 
-  // Attempt to sign in immediately in case auto-confirm is on
+  // If auto-confirm is ON, we might get a session immediately.
+  if (data.session) {
+      console.log("Signup successful, session created immediately.");
+      redirect("/dashboard");
+  }
+
+  // If no session, it might require email confirmation OR we can try to sign in.
+  // Attempt to sign in immediately to check status
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (signInError) {
+      console.log("Immediate sign-in failed:", signInError.message);
       // Likely "Email not confirmed"
       if (signInError.message.includes("Email not confirmed")) {
           redirect(`/login?message=Please check your email to confirm your account.`);
