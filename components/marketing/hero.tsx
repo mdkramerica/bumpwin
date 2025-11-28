@@ -38,10 +38,10 @@ export default function Hero() {
           </Link>
           
           <Link
-            href="#how-it-works"
+            href="/rules"
             className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-colors border border-slate-700 rounded-full hover:bg-slate-800"
           >
-            How It Works
+            View Rules & Rights
           </Link>
         </div>
         
