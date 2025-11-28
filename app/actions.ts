@@ -32,10 +32,25 @@ export async function addFlight(formData: FormData) {
     redirect("/dashboard?error=Missing flight details.");
   }
 
-  // 2. Lookup Flight Details
+  // 2. Ensure User Exists in public.users (Fix for FK Violation)
+  const { error: userCheckError } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+
+  if (userCheckError && userCheckError.code === 'PGRST116') {
+    // User missing, insert them
+    await supabase.from("users").insert({
+      id: user.id,
+      email: user.email || '',
+    });
+  }
+
+  // 3. Lookup Flight Details
   const flightDetails = await lookupFlight(airline, flightNum);
 
-  // 3. Save Trip to DB
+  // 4. Save Trip to DB
   const { data: trip, error: tripError } = await supabase
     .from("trips")
     .insert({

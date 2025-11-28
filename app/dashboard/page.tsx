@@ -1,3 +1,4 @@
+
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import MiseryMeter from "@/components/dashboard/misery-meter";
@@ -7,8 +8,14 @@ import BountyCard from "@/components/viral/bounty-card";
 import SocialShare from "@/components/viral/social-share";
 import { addFlight } from "@/app/actions";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const supabase = await createClient();
+  const { error } = await searchParams;
+  const errorMessage = typeof error === "string" ? error : null;
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -61,6 +68,12 @@ export default async function DashboardPage() {
           <h1 className="text-xl font-bold font-display text-lime-400">BUMPWIN</h1>
           <div className="text-xs text-slate-500">{user.email}</div>
         </header>
+
+        {errorMessage && (
+          <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-lg text-center animate-in fade-in slide-in-from-top-2">
+            {errorMessage}
+          </div>
+        )}
 
         {/* 1. Flight Input (Only show if no active trip) */}
         {!latestTrip && (

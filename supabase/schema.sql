@@ -49,5 +49,11 @@ ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE claims ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users view own data" ON users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users update own data" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users insert own data" ON users FOR INSERT WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Users view own trips" ON trips FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own trips" ON trips FOR INSERT WITH CHECK (auth.uid() = user_id);
+
 CREATE POLICY "Users view own claims" ON claims FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users insert own claims" ON claims FOR INSERT WITH CHECK (auth.uid() = user_id);

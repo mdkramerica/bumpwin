@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export const dynamic = 'force-dynamic';
 
-export default function LoginPage({ searchParams }: { searchParams: { message?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ message?: string }> }) {
+  const { message } = await searchParams;
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6">
       <div className="w-full max-w-md space-y-8">
@@ -66,9 +67,9 @@ export default function LoginPage({ searchParams }: { searchParams: { message?: 
             </button>
           </div>
           
-          {searchParams?.message && (
+          {message && (
             <div className="text-center text-sm text-red-400 bg-red-400/10 p-2 rounded">
-              {searchParams.message}
+              {message}
             </div>
           )}
         </form>
