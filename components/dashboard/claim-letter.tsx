@@ -1,13 +1,21 @@
 "use client";
 
 import { FileText, Download, CheckCircle, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function ClaimLetter() {
   const letterRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [dateStr, setDateStr] = useState("");
+  const [refNum, setRefNum] = useState("");
+
+  // Fix Hydration Error: Generate random data on client only
+  useEffect(() => {
+    setDateStr(new Date().toLocaleDateString());
+    setRefNum(`BW-${Math.floor(Math.random() * 10000)}`);
+  }, []);
 
   const handleDownload = async () => {
     if (!letterRef.current) return;
@@ -21,7 +29,8 @@ export default function ClaimLetter() {
       const canvas = await html2canvas(letterRef.current, {
         scale: 2, // Higher resolution
         useCORS: true,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
+        // Force sRGB colors if possible, but explicit styles are safer
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -45,22 +54,42 @@ export default function ClaimLetter() {
     }
   };
 
+  // We use inline styles for colors to ensure html2canvas compatibility
+  // avoiding Tailwind v4's potential use of 'oklch' or 'lab' functions.
+  const styles = {
+    container: { backgroundColor: "#ffffff", color: "#0f172a" }, // bg-white text-slate-900
+    watermark: { color: "#f1f5f9" }, // text-slate-100
+    border: { borderColor: "#0f172a" }, // border-slate-900
+    subtext: { color: "#64748b" }, // text-slate-500
+  };
+
   return (
     <div className="space-y-6">
-      <div ref={letterRef} className="bg-white text-slate-900 p-8 rounded-xl shadow-2xl max-w-full overflow-hidden relative">
+      {/* Capture Area */}
+      <div 
+        ref={letterRef} 
+        className="p-8 rounded-xl shadow-2xl max-w-full overflow-hidden relative"
+        style={styles.container}
+      >
         {/* Watermark */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-slate-100 text-6xl font-black opacity-50 -rotate-12 select-none pointer-events-none whitespace-nowrap z-0">
+        <div 
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-black opacity-50 -rotate-12 select-none pointer-events-none whitespace-nowrap z-0"
+          style={styles.watermark}
+        >
           CLAIM UNLOCKED
         </div>
 
-        <div className="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-start relative z-10">
+        <div 
+          className="border-b-2 pb-4 mb-6 flex justify-between items-start relative z-10"
+          style={styles.border}
+        >
           <div>
             <h2 className="font-display font-bold text-2xl uppercase">Demand Letter</h2>
-            <p className="text-xs text-slate-500 uppercase tracking-widest">Pursuant to 14 CFR Part 250</p>
+            <p className="text-xs uppercase tracking-widest" style={styles.subtext}>Pursuant to 14 CFR Part 250</p>
           </div>
           <div className="text-right text-xs font-mono">
-            <p>DATE: {new Date().toLocaleDateString()}</p>
-            <p>REF: BW-{Math.floor(Math.random() * 10000)}</p>
+            <p>DATE: {dateStr || "..."}</p>
+            <p>REF: {refNum || "..."}</p>
           </div>
         </div>
 
@@ -73,7 +102,7 @@ export default function ClaimLetter() {
             To Whom It May Concern,
           </p>
           <p>
-            I am writing to formally claim compensation under US Department of Transportation regulations regarding my confirmed reservation on flight UA 249, which was significantly delayed/cancelled on {new Date().toLocaleDateString()}.
+            I am writing to formally claim compensation under US Department of Transportation regulations regarding my confirmed reservation on flight UA 249, which was significantly delayed/cancelled on {dateStr}.
           </p>
           <p>
             The delay of over 3 hours entitles me to compensation. I hereby demand payment of <strong>$600.00</strong> within 30 days.
@@ -106,4 +135,3 @@ export default function ClaimLetter() {
     </div>
   );
 }
-
