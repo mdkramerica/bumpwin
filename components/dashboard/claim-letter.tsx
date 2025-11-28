@@ -5,11 +5,33 @@ import { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-export default function ClaimLetter() {
+// ... imports ...
+
+const AIRLINE_EMAILS: Record<string, string> = {
+  "UA": "customercare@united.com",
+  "AA": "American.Airlines.Customer.Relations@aa.com",
+  "DL": "charter.services@delta.com", // Delta is hard, usually web form
+  "WN": "custrel@custsupport.southwest.com",
+  "B6": "dearjetblue@jetblue.com",
+};
+
+const AIRLINE_NAMES: Record<string, string> = {
+  "UA": "United Airlines",
+  "AA": "American Airlines",
+  "DL": "Delta Air Lines",
+  "WN": "Southwest Airlines",
+  "B6": "JetBlue Airways",
+};
+
+export default function ClaimLetter({ airline }: { airline?: string }) {
   const letterRef = useRef<HTMLDivElement>(null);
+  const instructionsRef = useRef<HTMLDivElement>(null); // New Ref for Instructions
   const [isGenerating, setIsGenerating] = useState(false);
   const [dateStr, setDateStr] = useState("");
   const [refNum, setRefNum] = useState("");
+
+  const airlineName = airline ? (AIRLINE_NAMES[airline] || airline) : "Airline";
+  const airlineEmail = airline ? (AIRLINE_EMAILS[airline] || "customer.service@[airline].com") : "customer.service@[airline].com";
 
   // Fix Hydration Error: Generate random data on client only
   useEffect(() => {
@@ -18,7 +40,7 @@ export default function ClaimLetter() {
   }, []);
 
   const handleDownload = async () => {
-    if (!letterRef.current) return;
+    if (!letterRef.current || !instructionsRef.current) return;
 
     try {
       setIsGenerating(true);
@@ -26,14 +48,20 @@ export default function ClaimLetter() {
       // Wait a tick to ensure any state updates render
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const canvas = await html2canvas(letterRef.current, {
-        scale: 2, // Higher resolution
+      // Capture Letter (Page 1)
+      const canvas1 = await html2canvas(letterRef.current, {
+        scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        // Force sRGB colors if possible, but explicit styles are safer
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      // Capture Instructions (Page 2)
+      const canvas2 = await html2canvas(instructionsRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -41,9 +69,19 @@ export default function ClaimLetter() {
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      // Page 1
+      const imgData1 = canvas1.toDataURL("image/png");
+      const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
+      pdf.addImage(imgData1, "PNG", 0, 0, pdfWidth, imgHeight1);
+
+      // Page 2
+      pdf.addPage();
+      const imgData2 = canvas2.toDataURL("image/png");
+      const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
+      pdf.addImage(imgData2, "PNG", 0, 0, pdfWidth, imgHeight2);
+
       pdf.save("BumpWin-Claim-Letter.pdf");
 
     } catch (err) {
@@ -61,10 +99,52 @@ export default function ClaimLetter() {
     watermark: { color: "#f1f5f9" }, // text-slate-100
     border: { borderColor: "#0f172a" }, // border-slate-900
     subtext: { color: "#64748b" }, // text-slate-500
+    heading: { color: "#0f172a" }, // text-slate-900 for headings
+    list: { color: "#334155" }, // text-slate-700 for list text
   };
 
   return (
     <div className="space-y-6">
+      {/* Hidden Instructions Div (Only for Capture) */}
+      <div className="absolute -left-[9999px] top-0">
+         <div ref={instructionsRef} style={{ width: "794px", padding: "40px", ...styles.container }}> 
+            <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px", ...styles.heading }}>FILING INSTRUCTIONS</h1>
+            
+            <div style={{ marginBottom: "30px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "10px", ...styles.heading }}>STEP 1: REVIEW & SIGN</h2>
+              <p style={styles.list}>• Review the attached Demand Letter.</p>
+              <p style={styles.list}>• Sign your name at the bottom where indicated.</p>
+            </div>
+
+            <div style={{ marginBottom: "30px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "10px", ...styles.heading }}>STEP 2: GATHER DOCUMENTS</h2>
+              <p style={{ marginBottom: "5px", ...styles.list }}>Attach copies of the following with your letter:</p>
+              <ul style={{ paddingLeft: "20px", ...styles.list }}>
+                 <li>□ Boarding Pass (Original or Digital Screenshot)</li>
+                 <li>□ Ticket Receipt / E-Ticket Confirmation</li>
+                 <li>□ Expense Receipts (if claiming meals/hotels)</li>
+                 <li>□ Copy of ID (Driver's License/Passport)</li>
+              </ul>
+            </div>
+
+            <div style={{ marginBottom: "30px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "10px", ...styles.heading }}>STEP 3: SEND TO AIRLINE</h2>
+              <p style={styles.list}>Send the letter and attachments to <strong>{airlineName}</strong>:</p>
+              <div style={{ marginTop: "10px", padding: "15px", border: "1px solid #e2e8f0", borderRadius: "8px", backgroundColor: "#f8fafc" }}>
+                 <p style={{ fontWeight: "bold", ...styles.heading }}>📧 Via Email:</p>
+                 <p style={{ fontFamily: "monospace", ...styles.list }}>{airlineEmail}</p>
+                 <p style={{ marginTop: "10px", fontSize: "12px", ...styles.subtext }}>*Tip: Send with "Delivery Receipt" enabled.</p>
+              </div>
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "10px", ...styles.heading }}>STEP 4: NEXT STEPS</h2>
+              <p style={styles.list}>• The airline must acknowledge receipt within 30 days.</p>
+              <p style={styles.list}>• If they deny the claim or do not respond, file a complaint with the US DOT at <span style={{textDecoration: "underline"}}>transportation.gov/airconsumer</span>.</p>
+            </div>
+         </div>
+      </div>
+
       {/* Capture Area */}
       <div 
         ref={letterRef} 
@@ -95,14 +175,14 @@ export default function ClaimLetter() {
 
         <div className="space-y-4 font-serif text-sm leading-relaxed relative z-10">
           <p>
-            <strong>To: United Airlines Legal Department</strong><br />
-            Re: Compensation Claim for Flight UA 249
+            <strong>To: {airlineName} Legal Department</strong><br />
+            Re: Compensation Claim for Flight {airline ? airline : "UA"} 249
           </p>
           <p>
             To Whom It May Concern,
           </p>
           <p>
-            I am writing to formally claim compensation under US Department of Transportation regulations regarding my confirmed reservation on flight UA 249, which was significantly delayed/cancelled on {dateStr}.
+            I am writing to formally claim compensation under US Department of Transportation regulations regarding my confirmed reservation on flight {airline ? airline : "UA"} 249, which was significantly delayed/cancelled on {dateStr}.
           </p>
           <p>
             The delay of over 3 hours entitles me to compensation. I hereby demand payment of <strong>$600.00</strong> within 30 days.

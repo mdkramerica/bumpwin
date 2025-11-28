@@ -134,7 +134,7 @@ export default async function DashboardPage({
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* The Reward: The Letter */}
             <section className="pt-4">
-               <ClaimLetter />
+               <ClaimLetter airline={latestTrip.airline_code} />
             </section>
 
             {/* The Viral Loop: Share Buttons */}
