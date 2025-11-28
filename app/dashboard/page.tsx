@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
@@ -33,11 +32,26 @@ export default async function DashboardPage({
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  // ... (user profile fetching remains same) ...
+  // Also fetch User profile for Referral Code
+  // Note: If user doesn't exist in users table yet (trigger might not have run), handle gracefully
+  let userProfile = null;
+  const { data: profileData, error: userProfileError } = await supabase
+    .from("users")
+    .select("referral_code, total_referral_earnings")
+    .eq("id", user.id)
+    .single();
   
   // If user profile doesn't exist, create it (fallback if trigger didn't run)
-  if (userProfileError && userProfileError.code === 'PGRST116') {
-    // ... (creation logic remains same) ...
+  if (userProfileError && (userProfileError as any).code === 'PGRST116') {
+    // User doesn't exist in users table, create it
+    const { data: newUser } = await supabase
+      .from("users")
+      .insert({
+        id: user.id,
+        email: user.email || '',
+      })
+      .select()
+      .single();
     userProfile = newUser || { referral_code: null, total_referral_earnings: 0 };
   } else {
     userProfile = profileData;
