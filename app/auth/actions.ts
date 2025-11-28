@@ -27,12 +27,27 @@ export async function signup(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  
+  // Robust URL determination
   const headersList = await headers();
   const host = headersList.get("host");
   const protocol = headersList.get("x-forwarded-proto") || "http";
-  const origin = headersList.get("origin") || `${protocol}://${host}`;
+  
+  // 1. Prefer NEXT_PUBLIC_SITE_URL (Explicit Production URL)
+  // 2. Prefer VERCEL_PROJECT_PRODUCTION_URL or VERCEL_URL (Vercel Auto-Env)
+  // 3. Fallback to Request Headers
+  let origin = process.env.NEXT_PUBLIC_SITE_URL;
+  
+  if (!origin && process.env.VERCEL_URL) {
+    origin = `https://${process.env.VERCEL_URL}`;
+  }
+  
+  if (!origin) {
+     origin = headersList.get("origin") || `${protocol}://${host}`;
+  }
 
   console.log("Attempting signup for:", email);
+  console.log("Redirect Origin:", origin);
 
   const { data, error } = await supabase.auth.signUp({
     email,
