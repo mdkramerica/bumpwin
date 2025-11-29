@@ -96,8 +96,8 @@ export default async function DashboardPage({
         {/* 1. Flight Input (Only show if no active trip) */}
         {!latestTrip && (
           <section className="space-y-4">
-             <h2 className="text-2xl font-bold">Check Your Flight</h2>
-             <p className="text-sm text-slate-400">Enter your flight details to see if you may be owed compensation.</p>
+             <h2 className="text-2xl font-bold">Track Your Flight</h2>
+             <p className="text-sm text-slate-400">Add a past incident or track an upcoming flight for alerts.</p>
              <form action={addFlight} className="space-y-3">
                <div className="grid grid-cols-2 gap-3">
                  <div>
@@ -130,18 +130,20 @@ export default async function DashboardPage({
                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors [color-scheme:dark]"
                    required
                  />
+                 <p className="text-[10px] text-slate-500 mt-1">Future dates = we'll monitor & alert you. Past dates = file a claim.</p>
                </div>
                <div>
-                 <label className="block text-xs font-medium text-slate-400 mb-1">WHAT HAPPENED? <span className="text-slate-500">(Select one)</span></label>
+                 <label className="block text-xs font-medium text-slate-400 mb-1">STATUS <span className="text-slate-500">(What happened or will happen?)</span></label>
                  <select 
                    name="issueType"
                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors"
                    required
                  >
-                   <option value="">Select an issue...</option>
-                   <option value="DELAY">Flight was significantly delayed (3+ hours)</option>
-                   <option value="CANCELLATION">Flight was cancelled</option>
-                   <option value="BUMPING">I was involuntarily bumped (denied boarding)</option>
+                   <option value="">Select status...</option>
+                   <option value="UPCOMING">📅 Upcoming flight - monitor for issues</option>
+                   <option value="DELAY">⏰ Flight was delayed (3+ hours)</option>
+                   <option value="CANCELLATION">❌ Flight was cancelled</option>
+                   <option value="BUMPING">🚫 I was involuntarily bumped</option>
                  </select>
                </div>
                <div>
@@ -159,8 +161,25 @@ export default async function DashboardPage({
                  </div>
                  <p className="text-[10px] text-slate-500 mt-1">Important for bumping claims - compensation is based on fare paid</p>
                </div>
+               
+               {/* Email Alerts Checkbox */}
+               <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                 <label className="flex items-start gap-3 cursor-pointer">
+                   <input 
+                     type="checkbox" 
+                     name="enableAlerts"
+                     defaultChecked
+                     className="mt-1 w-4 h-4 accent-lime-400"
+                   />
+                   <div>
+                     <span className="text-white text-sm font-medium">Email me alerts</span>
+                     <p className="text-xs text-slate-500">Get notified if your flight is delayed, cancelled, or you become eligible for compensation</p>
+                   </div>
+                 </label>
+               </div>
+               
                <button type="submit" className="w-full bg-lime-400 text-slate-900 font-bold py-4 rounded-lg hover:bg-lime-300 transition-transform active:scale-95">
-                 CHECK MY ELIGIBILITY
+                 TRACK FLIGHT
                </button>
              </form>
           </section>
