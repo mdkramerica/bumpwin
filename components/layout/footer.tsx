@@ -1,0 +1,47 @@
+import Link from "next/link";
+
+export default function Footer() {
+  const currentYear = new Date().getFullYear();
+  
+  return (
+    <footer className="bg-slate-950 border-t border-slate-800 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Main Footer Content */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-6">
+          {/* Logo */}
+          <Link href="/" className="font-display font-bold text-xl text-lime-400 hover:opacity-80 transition-opacity">
+            BUMPWIN
+          </Link>
+          
+          {/* Legal Links */}
+          <nav className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm">
+            <Link href="/terms" className="text-slate-400 hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="text-slate-400 hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/rules" className="text-slate-400 hover:text-white transition-colors">
+              Know Your Rights
+            </Link>
+          </nav>
+        </div>
+        
+        {/* Disclaimer */}
+        <div className="text-center text-[10px] sm:text-xs text-slate-600 leading-relaxed max-w-3xl mx-auto mb-4">
+          <p>
+            BumpWin provides informational tools and template documents only. We are not a law firm and do not provide legal advice. 
+            No attorney-client relationship is created by using this service. Results are not guaranteed. 
+            Consult a qualified attorney for advice specific to your situation.
+          </p>
+        </div>
+        
+        {/* Copyright */}
+        <div className="text-center text-xs text-slate-600">
+          <p>© {currentYear} BumpWin. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
