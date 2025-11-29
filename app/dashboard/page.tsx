@@ -9,7 +9,7 @@ import BountyCard from "@/components/viral/bounty-card";
 import SocialShare from "@/components/viral/social-share";
 import { addFlight } from "@/app/actions";
 import { logout } from "@/app/auth/actions";
-import { Plus, History, LogOut } from "lucide-react";
+import { Plus, History, LogOut, Plane, ChevronRight } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -254,23 +254,41 @@ export default async function DashboardPage({
               {trips.map((trip) => {
                 const claim = trip.claims?.[0];
                 return (
-                  <div key={trip.id} className="bg-slate-800/50 rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-sm">{trip.airline_code} {trip.flight_number}</div>
-                      <div className="text-xs text-slate-500">{new Date(trip.created_at).toLocaleDateString()}</div>
+                  <Link 
+                    key={trip.id} 
+                    href={`/flight/${trip.id}`}
+                    className="block bg-slate-800/50 hover:bg-slate-800 rounded-lg p-4 flex items-center justify-between transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-700 group-hover:bg-slate-600 rounded-lg flex items-center justify-center transition-colors">
+                        <Plane className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm group-hover:text-lime-400 transition-colors">
+                          {trip.airline_code} {trip.flight_number}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {new Date(trip.scheduled_departure).toLocaleDateString()}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center gap-2">
                       {claim?.is_unlocked ? (
                         <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-lime-400/10 text-lime-400">
                           UNLOCKED
                         </span>
+                      ) : trip.status === "UPCOMING" ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400">
+                          UPCOMING
+                        </span>
                       ) : (
-                         <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-700 text-slate-400">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-700 text-slate-400">
                           {trip.status}
                         </span>
                       )}
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
