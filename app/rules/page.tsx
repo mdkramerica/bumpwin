@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, X, Scale, Lightbulb } from "lucide-react";
+import { ArrowLeft, X, Scale, Lightbulb, ClipboardList } from "lucide-react";
 import { COMPENSATION_RULES, CompensationRule } from "@/lib/rules-data/rules";
 
 export default function RulesPage() {
@@ -165,6 +165,25 @@ export default function RulesPage() {
                       <li key={index} className="flex items-start gap-2 text-sm text-slate-300">
                         <span className="text-lime-400 mt-1">•</span>
                         {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Evidence Checklist */}
+              {selectedRule.checklist && selectedRule.checklist.length > 0 && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ClipboardList className="w-5 h-5 text-blue-400" />
+                    <h3 className="font-bold text-lg text-blue-400">Evidence Checklist</h3>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4">Gather these documents to support your claim:</p>
+                  <ul className="space-y-3">
+                    {selectedRule.checklist.map((item, index) => (
+                      <li key={index} className="flex items-start gap-3 text-sm text-slate-300">
+                        <div className="w-5 h-5 rounded border-2 border-blue-400/50 flex-shrink-0 mt-0.5" />
+                        {item}
                       </li>
                     ))}
                   </ul>

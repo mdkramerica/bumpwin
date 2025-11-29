@@ -12,6 +12,7 @@ export interface CompensationRule {
   description: string;
   legalText: string; // The actual law/regulation text
   tips?: string[]; // Optional tips for claiming
+  checklist: string[]; // Required documents/evidence for a successful claim
 }
 
 export const COMPENSATION_RULES: CompensationRule[] = [
@@ -36,6 +37,14 @@ export const COMPENSATION_RULES: CompensationRule[] = [
       "Always ask for written confirmation of the bump",
       "Do NOT accept a voucher if you want cash - you have the right to cash",
       "The airline must book you on the next available flight at no extra cost"
+    ],
+    checklist: [
+      "Original boarding pass (physical or screenshot)",
+      "Booking confirmation / E-ticket with your name and flight details",
+      "Written 'Denied Boarding' notice from the airline (ask for this!)",
+      "Photo ID (passport or driver's license)",
+      "New boarding pass showing rebooked flight and actual arrival time",
+      "Any receipts for meals, transport, or accommodation incurred due to the delay"
     ]
   },
   {
@@ -54,6 +63,15 @@ export const COMPENSATION_RULES: CompensationRule[] = [
       "This is the MAXIMUM compensation under US law for bumping",
       "Demand payment immediately - they must pay same day",
       "Keep all documentation: boarding pass, bump notice, receipts"
+    ],
+    checklist: [
+      "Original boarding pass (physical or screenshot)",
+      "Booking confirmation / E-ticket with your name and flight details",
+      "Written 'Denied Boarding' notice from the airline (CRITICAL - demand this)",
+      "Photo ID (passport or driver's license)",
+      "New boarding pass showing rebooked flight",
+      "Proof of actual arrival time (boarding pass, flight tracker screenshot)",
+      "All receipts for meals, transport, or hotel due to the extended delay"
     ]
   },
   {
@@ -72,6 +90,16 @@ On any flight segment using large aircraft, or on any flight segment that is inc
       "File a claim IMMEDIATELY at the airport before leaving",
       "Keep receipts for any emergency purchases (clothes, toiletries)",
       "Take photos of damaged bags before and after"
+    ],
+    checklist: [
+      "Baggage claim ticket / tag number",
+      "Property Irregularity Report (PIR) - filed at airport baggage office",
+      "Photos of damaged bag (exterior and interior)",
+      "Itemized list of lost/damaged contents with estimated values",
+      "Original purchase receipts for valuable items (if available)",
+      "Receipts for emergency replacement purchases (clothes, toiletries)",
+      "Boarding pass and booking confirmation",
+      "Photo ID"
     ]
   },
   {
@@ -97,6 +125,15 @@ Airlines can be fined up to $27,500 per passenger for violations.`,
       "Start a timer when the plane leaves the gate",
       "Politely but firmly ask the crew about deplane options after 2.5 hours",
       "Document everything - times, crew responses, conditions"
+    ],
+    checklist: [
+      "Boarding pass showing flight number and date",
+      "Timestamped notes or photos documenting the delay (use your phone)",
+      "Screenshots from flight tracking apps showing tarmac time",
+      "Names of crew members you spoke to (if possible)",
+      "Written record of when food/water was offered (or not)",
+      "Any communication from the airline about the delay",
+      "Witness contact info (fellow passengers)"
     ]
   },
 
@@ -124,6 +161,15 @@ Note: The Sturgeon ruling (C-402/07) extended this compensation to delays of 3+ 
       "EU rules apply to ALL flights departing from EU airports, regardless of airline",
       "Also applies to EU airlines flying INTO the EU from anywhere",
       "'Extraordinary circumstances' (weather, strikes) may exempt the airline - but they must prove it"
+    ],
+    checklist: [
+      "Booking confirmation / E-ticket showing original scheduled times",
+      "Boarding pass (original delayed flight)",
+      "Proof of actual arrival time (new boarding pass, flight tracker screenshot)",
+      "Photo ID (passport preferred for EU claims)",
+      "Any written communication from airline about the delay",
+      "Receipts for meals, refreshments, or hotel (for reimbursement)",
+      "Screenshot of flight distance (use Great Circle Mapper to calculate km)"
     ]
   },
   {
@@ -148,6 +194,16 @@ Note: The Sturgeon ruling (C-402/07) extended this compensation to delays of 3+ 
       "Screenshot your booking confirmation showing original times",
       "If they rebook you, check if the new arrival time triggers compensation",
       "You're entitled to meals and hotel even if no cash compensation applies"
+    ],
+    checklist: [
+      "Original booking confirmation showing scheduled departure/arrival",
+      "Cancellation notice from airline (email, SMS, or app notification)",
+      "Screenshot showing when you were notified (timestamp is key!)",
+      "New booking confirmation if re-routed",
+      "Proof of actual arrival time on new flight",
+      "Photo ID (passport preferred)",
+      "Receipts for meals, hotel, and transport during wait",
+      "Screenshot of flight distance for compensation tier calculation"
     ]
   },
   {
@@ -172,6 +228,16 @@ Article 7(3): The compensation referred to in paragraph 1 shall be paid in cash,
       "NEVER sign anything accepting a voucher unless you truly want it",
       "Cash compensation must be offered FIRST before vouchers",
       "Get the airline's written confirmation of the denied boarding"
+    ],
+    checklist: [
+      "Original boarding pass (shows you had a confirmed seat)",
+      "Booking confirmation / E-ticket",
+      "Written 'Denied Boarding' confirmation from airline (DEMAND THIS)",
+      "Photo ID (passport preferred for EU claims)",
+      "New boarding pass showing rebooked flight",
+      "Proof of actual arrival time",
+      "Receipts for meals, hotel, transport incurred due to rebooking",
+      "Screenshot of flight distance for compensation tier"
     ]
   }
 ];
