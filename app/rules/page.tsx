@@ -28,7 +28,11 @@ export default function RulesPage() {
       <main className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
         
         {/* Hero Section */}
-        <section className="text-center mb-10 sm:mb-16 space-y-4 sm:space-y-6">
+        <section className="text-center mb-6 sm:mb-10 space-y-3 sm:space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-700 bg-slate-800/60 text-[10px] sm:text-xs text-slate-400 uppercase tracking-widest">
+            <span className="h-1.5 w-1.5 rounded-full bg-lime-400" />
+            Last updated: November 2025
+          </div>
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-black font-display tracking-tight">
             KNOW YOUR <span className="text-lime-400">RIGHTS</span>.
           </h1>
@@ -36,6 +40,19 @@ export default function RulesPage() {
             Airlines bank on you not knowing the rules. We've compiled the definitive database of every trigger that entitles you to compensation in the US and EU.
           </p>
           <p className="text-xs sm:text-sm text-slate-500">Tap any card to view the full legal text.</p>
+        </section>
+
+        {/* Disclaimer Banner */}
+        <section className="mb-10 sm:mb-12">
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 sm:px-6 sm:py-4 text-left text-[11px] sm:text-xs text-amber-100">
+            <p className="font-semibold text-amber-300 mb-1">Important: US vs EU rules</p>
+            <p className="mb-1">
+              In the <span className="font-semibold">US</span>, federal law only mandates cash compensation for <span className="font-semibold">involuntary denied boarding (overbooking)</span>. There is currently <span className="font-semibold">no nationwide cash compensation requirement for delays or cancellations</span>.
+            </p>
+            <p>
+              In the <span className="font-semibold">EU</span>, Regulation EC 261/2004 provides strong rights for delays, cancellations, and denied boarding. Lawmakers are debating reforms as of November 2025, but the existing EC 261/2004 rules remain in force until new legislation takes effect. This page is informational only and is not legal advice.
+            </p>
+          </div>
         </section>
 
         {/* Rules Grid */}
