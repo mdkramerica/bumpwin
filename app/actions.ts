@@ -93,3 +93,29 @@ export async function addFlight(formData: FormData) {
   redirect("/dashboard");
 }
 
+// DEMO ONLY: Unlock all claims for the current user without payment
+export async function demoUnlockAllClaims() {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    redirect("/login?message=Please log in first.");
+  }
+
+  // Unlock all claims for this user
+  const { error } = await supabase
+    .from("claims")
+    .update({ is_unlocked: true })
+    .eq("user_id", user.id)
+    .eq("is_unlocked", false);
+
+  if (error) {
+    console.error("Demo Unlock Error:", error);
+    redirect("/dashboard?error=Failed to unlock claims.");
+  }
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
+

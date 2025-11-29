@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { demoUnlockAllClaims } from "@/app/actions";
+import { Unlock } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -37,11 +41,26 @@ export default function Footer() {
         </div>
         
         {/* Copyright */}
-        <div className="text-center text-xs text-slate-600">
+        <div className="text-center text-xs text-slate-600 mb-4">
           <p>© {currentYear} BumpWin. All rights reserved.</p>
+        </div>
+
+        {/* Demo Unlock Button - FOR TESTING ONLY */}
+        <div className="border-t border-slate-800 pt-4 mt-4">
+          <form action={demoUnlockAllClaims} className="flex justify-center">
+            <button 
+              type="submit"
+              className="flex items-center gap-2 px-4 py-2 text-xs bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg hover:bg-amber-500/20 transition-colors"
+            >
+              <Unlock className="w-3 h-3" />
+              <span>DEMO: Unlock All Claims (No Payment)</span>
+            </button>
+          </form>
+          <p className="text-center text-[10px] text-amber-600/60 mt-2">
+            ⚠️ Development only - Remove before production
+          </p>
         </div>
       </div>
     </footer>
   );
 }
-
