@@ -4,15 +4,26 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-// Mock Flight Data Lookup (Replace with real Aviation API later)
-async function lookupFlight(airline: string, flightNumber: string) {
-  // In a real app, fetch from AviationStack or similar.
-  // For MVP, we simulate a "Winning" flight (Delayed 200 mins)
-  return {
-    scheduled_departure: new Date().toISOString(),
-    status: "COMPLETED", // or DELAYED
-    mock_delay_minutes: 200, // HARDCODED WINNER FOR DEMO
-  };
+// Issue types
+type IssueType = "DELAY" | "CANCELLATION" | "BUMPING";
+
+// Calculate estimated compensation based on issue type and ticket price
+function calculateEstimatedCompensation(
+  issueType: IssueType, 
+  ticketPrice: number | null,
+  delayMinutes: number = 200
+): number {
+  if (issueType === "BUMPING") {
+    const fare = ticketPrice || 300; // Default estimate if not provided
+    if (delayMinutes <= 60) return 0;
+    if (delayMinutes <= 120) return Math.min(fare * 2, 775); // 200% of fare, max $775
+    return Math.min(fare * 4, 1550); // 400% of fare, max $1,550
+  }
+  
+  // For delays and cancellations, there's no mandatory US compensation
+  // But we can still track the claim for goodwill requests
+  // Return 0 to indicate no guaranteed compensation
+  return 0;
 }
 
 export async function addFlight(formData: FormData) {
@@ -25,11 +36,25 @@ export async function addFlight(formData: FormData) {
     redirect("/login?message=Please log in to track your flight.");
   }
 
-  const airline = formData.get("airline") as string;
-  const flightNum = formData.get("flightNum") as string;
+  // Get form data
+  const airline = (formData.get("airline") as string)?.toUpperCase().trim();
+  const flightNum = (formData.get("flightNum") as string)?.trim();
+  const flightDate = formData.get("flightDate") as string;
+  const issueType = formData.get("issueType") as IssueType;
+  const ticketPriceStr = formData.get("ticketPrice") as string;
+  const ticketPrice = ticketPriceStr ? parseFloat(ticketPriceStr) : null;
 
+  // Validation
   if (!airline || !flightNum) {
     redirect("/dashboard?error=Missing flight details.");
+  }
+  
+  if (!flightDate) {
+    redirect("/dashboard?error=Please enter the flight date.");
+  }
+  
+  if (!issueType) {
+    redirect("/dashboard?error=Please select what happened to your flight.");
   }
 
   // 2. Ensure User Exists in public.users (Fix for FK Violation)
@@ -40,15 +65,15 @@ export async function addFlight(formData: FormData) {
     .single();
 
   if (userCheckError && userCheckError.code === 'PGRST116') {
-    // User missing, insert them
     await supabase.from("users").insert({
       id: user.id,
       email: user.email || '',
     });
   }
 
-  // 3. Lookup Flight Details
-  const flightDetails = await lookupFlight(airline, flightNum);
+  // 3. Create departure timestamp from date
+  // For now, use noon on the selected date as placeholder
+  const scheduledDeparture = new Date(`${flightDate}T12:00:00`).toISOString();
 
   // 4. Save Trip to DB
   const { data: trip, error: tripError } = await supabase
@@ -57,8 +82,9 @@ export async function addFlight(formData: FormData) {
       user_id: user.id,
       airline_code: airline,
       flight_number: flightNum,
-      scheduled_departure: flightDetails.scheduled_departure,
-      status: "UPCOMING", // Default
+      scheduled_departure: scheduledDeparture,
+      ticket_price: ticketPrice,
+      status: issueType === "CANCELLATION" ? "CANCELED" : "COMPLETED",
     })
     .select()
     .single();
@@ -68,25 +94,25 @@ export async function addFlight(formData: FormData) {
     redirect("/dashboard?error=Failed to save trip.");
   }
 
-  // 4. Logic Engine: Is this a WINNER?
-  // Logic: > 180 mins delay = WINNER.
-  const isWinner = flightDetails.mock_delay_minutes > 180;
+  // 5. Calculate estimated compensation
+  // For demo, assume 200 min delay for delays, 0 for cancellations (handled differently)
+  const mockDelayMinutes = issueType === "DELAY" ? 200 : issueType === "BUMPING" ? 200 : 0;
+  const estimatedPayout = calculateEstimatedCompensation(issueType, ticketPrice, mockDelayMinutes);
 
-  if (isWinner) {
-    // Create a LOCKED Claim
-    const { error: claimError } = await supabase
-      .from("claims")
-      .insert({
-        trip_id: trip.id,
-        user_id: user.id,
-        status: "DRAFT",
-        estimated_payout: 600.00, // The $600 Promise
-        is_unlocked: false,       // THE PAYWALL
-      });
+  // 6. Create Claim
+  // All issue types get a claim, but only bumping has guaranteed compensation
+  const { error: claimError } = await supabase
+    .from("claims")
+    .insert({
+      trip_id: trip.id,
+      user_id: user.id,
+      status: "DRAFT",
+      estimated_payout: estimatedPayout,
+      is_unlocked: false,
+    });
 
-    if (claimError) {
-        console.error("Claim Error:", claimError);
-    }
+  if (claimError) {
+    console.error("Claim Error:", claimError);
   }
 
   revalidatePath("/dashboard");
