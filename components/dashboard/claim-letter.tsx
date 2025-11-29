@@ -148,32 +148,32 @@ export default function ClaimLetter({ airline }: { airline?: string }) {
       {/* Capture Area */}
       <div 
         ref={letterRef} 
-        className="p-8 rounded-xl shadow-2xl max-w-full overflow-hidden relative"
+        className="p-4 sm:p-8 rounded-xl shadow-2xl max-w-full overflow-hidden relative"
         style={styles.container}
       >
         {/* Watermark */}
         <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-black opacity-50 -rotate-12 select-none pointer-events-none whitespace-nowrap z-0"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl sm:text-6xl font-black opacity-50 -rotate-12 select-none pointer-events-none whitespace-nowrap z-0"
           style={styles.watermark}
         >
           CLAIM UNLOCKED
         </div>
 
         <div 
-          className="border-b-2 pb-4 mb-6 flex justify-between items-start relative z-10"
+          className="border-b-2 pb-3 sm:pb-4 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 relative z-10"
           style={styles.border}
         >
           <div>
-            <h2 className="font-display font-bold text-2xl uppercase">Demand Letter</h2>
-            <p className="text-xs uppercase tracking-widest" style={styles.subtext}>Pursuant to 14 CFR Part 250</p>
+            <h2 className="font-display font-bold text-xl sm:text-2xl uppercase">Demand Letter</h2>
+            <p className="text-[10px] sm:text-xs uppercase tracking-widest" style={styles.subtext}>Pursuant to 14 CFR Part 250</p>
           </div>
-          <div className="text-right text-xs font-mono">
+          <div className="text-left sm:text-right text-[10px] sm:text-xs font-mono">
             <p>DATE: {dateStr || "..."}</p>
             <p>REF: {refNum || "..."}</p>
           </div>
         </div>
 
-        <div className="space-y-4 font-serif text-sm leading-relaxed relative z-10">
+        <div className="space-y-3 sm:space-y-4 font-serif text-xs sm:text-sm leading-relaxed relative z-10">
           <p>
             <strong>To: {airlineName} Legal Department</strong><br />
             Re: Compensation Claim for Flight {airline ? airline : "UA"} 249

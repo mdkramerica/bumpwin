@@ -66,11 +66,11 @@ export default async function DashboardPage({
       <div className="max-w-md mx-auto space-y-8">
         
         {/* Header */}
-        <header className="flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold font-display text-lime-400 hover:opacity-80">
+        <header className="flex justify-between items-center gap-2">
+          <Link href="/" className="text-xl font-bold font-display text-lime-400 hover:opacity-80 flex-shrink-0">
             BUMPWIN
           </Link>
-          <div className="text-xs text-slate-500">{user.email}</div>
+          <div className="text-xs text-slate-500 truncate max-w-[150px] sm:max-w-none">{user.email}</div>
         </header>
 
         {errorMessage && (

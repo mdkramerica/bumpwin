@@ -7,22 +7,22 @@ export default function Home() {
       <Hero />
       
       {/* Demo Section for Misery Meter */}
-      <section id="how-it-works" className="py-24 bg-slate-800/50">
+      <section id="how-it-works" className="py-16 sm:py-24 bg-slate-800/50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-black text-center mb-12 font-display">
+          <h2 className="text-2xl sm:text-3xl font-black text-center mb-8 sm:mb-12 font-display">
             HOW IT WORKS
           </h2>
           
-          <div className="grid gap-12 md:grid-cols-2 max-w-4xl mx-auto items-center">
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-lime-400">
+          <div className="grid gap-8 sm:gap-12 md:grid-cols-2 max-w-4xl mx-auto items-center">
+            <div className="space-y-4 sm:space-y-6 text-center md:text-left">
+              <h3 className="text-xl sm:text-2xl font-bold text-lime-400">
                 1. We Track The Misery
               </h3>
-              <p className="text-slate-400 text-lg">
+              <p className="text-slate-400 text-base sm:text-lg">
                 Every minute you wait increases your chance of a payout. 
                 We monitor your flight in real-time.
               </p>
-              <ul className="space-y-3 text-slate-300">
+              <ul className="space-y-2 sm:space-y-3 text-slate-300 inline-block text-left">
                 <li className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-lime-400 rounded-full" />
                   Real-time delay tracking
@@ -39,7 +39,7 @@ export default function Home() {
             </div>
 
             {/* Demo Meter: Set to a Winning State */}
-            <div className="transform scale-90 md:scale-100">
+            <div className="transform scale-90 sm:scale-100">
               <MiseryMeter delayMinutes={210} />
             </div>
           </div>
