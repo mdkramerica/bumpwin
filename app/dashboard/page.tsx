@@ -163,7 +163,6 @@ export default async function DashboardPage({
 
             {/* The Viral Loop: Share Buttons */}
             <section>
-               <p className="text-center text-sm text-slate-400 mb-2">Don't keep the victory to yourself.</p>
                <SocialShare airline={latestTrip.airline_code} />
             </section>
 
