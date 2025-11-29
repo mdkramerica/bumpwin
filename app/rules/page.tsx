@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, X, Scale, Lightbulb, ClipboardList } from "lucide-react";
+import { ArrowLeft, X, Scale, Lightbulb, ClipboardList, FileText } from "lucide-react";
 import { COMPENSATION_RULES, CompensationRule } from "@/lib/rules-data/rules";
+import EmailCapture from "@/components/marketing/email-capture";
 
 export default function RulesPage() {
   const [selectedRule, setSelectedRule] = useState<CompensationRule | null>(null);
@@ -101,16 +102,43 @@ export default function RulesPage() {
           ))}
         </div>
 
-        {/* CTA Footer */}
-        <section className="mt-16 sm:mt-24 text-center bg-slate-800 rounded-2xl p-6 sm:p-12 border border-slate-700">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 font-display">Did one of these happen to you?</h2>
-          <p className="text-slate-400 mb-6 sm:mb-8 text-sm sm:text-base">Don't leave money on the table. Start your claim in seconds.</p>
-          <Link 
-            href="/dashboard" 
-            className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-slate-900 transition-transform bg-lime-400 rounded-full hover:scale-105 hover:bg-lime-300 active:scale-95"
-          >
-            Check My Flight Now
-          </Link>
+        {/* Email Capture Section */}
+        <section className="mt-16 sm:mt-24">
+          <div className="grid gap-6 lg:grid-cols-2 items-stretch">
+            {/* Email Capture Card */}
+            <div className="bg-gradient-to-br from-lime-400/10 to-emerald-500/5 border border-lime-400/20 rounded-2xl p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-lime-400/20 rounded-xl flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-lime-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold font-display">Get Our Free Guide</h3>
+                  <p className="text-sm text-slate-400">Your rights explained in plain English</p>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-6">
+                Subscribe to get our comprehensive compensation guide + instant alerts when your flights qualify for money back.
+              </p>
+              <EmailCapture 
+                variant="inline"
+                tag="rules-page"
+                buttonText="Get Free Guide"
+                successMessage="Check your inbox for your guide!"
+              />
+            </div>
+
+            {/* CTA Card */}
+            <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 border border-slate-700 flex flex-col justify-center text-center">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 font-display">Did one of these happen to you?</h2>
+              <p className="text-slate-400 mb-6 text-sm sm:text-base">Don't leave money on the table. Start your claim in seconds.</p>
+              <Link 
+                href="/dashboard" 
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-bold text-slate-900 transition-transform bg-lime-400 rounded-full hover:scale-105 hover:bg-lime-300 active:scale-95"
+              >
+                Check My Flight Now
+              </Link>
+            </div>
+          </div>
         </section>
 
       </main>

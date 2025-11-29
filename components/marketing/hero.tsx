@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Plane, AlertTriangle } from "lucide-react";
+import { ArrowRight, Plane } from "lucide-react";
+import EmailCapture from "./email-capture";
 
 export default function Hero() {
   return (
@@ -49,9 +50,19 @@ export default function Hero() {
             View Rules & Rights
           </Link>
         </div>
+
+        {/* Email Capture - Hero Inline */}
+        <div className="pt-6 sm:pt-8 max-w-md mx-auto w-full">
+          <p className="text-sm text-slate-400 mb-3">Or get notified when your flights qualify:</p>
+          <EmailCapture 
+            variant="inline" 
+            tag="homepage-hero"
+            buttonText="Get Alerts"
+          />
+        </div>
         
         {/* Trust badges */}
-        <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs sm:text-sm text-slate-500">
+        <div className="pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-center gap-4 text-xs sm:text-sm text-slate-500">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 bg-blue-400 rounded-full" />
             US: 14 CFR Part 250 (Bumping)

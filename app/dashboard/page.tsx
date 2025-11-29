@@ -7,9 +7,10 @@ import ClaimLetter from "@/components/dashboard/claim-letter";
 import FlightInfoCard from "@/components/dashboard/flight-info-card";
 import BountyCard from "@/components/viral/bounty-card";
 import SocialShare from "@/components/viral/social-share";
+import EmailCapture from "@/components/marketing/email-capture";
 import { addFlight } from "@/app/actions";
 import { logout } from "@/app/auth/actions";
-import { Plus, History, LogOut, Plane, ChevronRight } from "lucide-react";
+import { Plus, History, LogOut, Plane, ChevronRight, Bell } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -91,6 +92,29 @@ export default async function DashboardPage({
           <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-lg text-center animate-in fade-in slide-in-from-top-2">
             {errorMessage}
           </div>
+        )}
+
+        {/* Welcome Card for New Users (no trips yet) */}
+        {(!trips || trips.length === 0) && !showNewForm && (
+          <section className="bg-gradient-to-br from-lime-400/10 to-emerald-500/5 border border-lime-400/20 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-lime-400 rounded-xl flex items-center justify-center">
+                <Bell className="w-6 h-6 text-slate-900" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold font-display">Welcome to BumpWin!</h2>
+                <p className="text-sm text-slate-400">Get alerts when your flights qualify for compensation.</p>
+              </div>
+            </div>
+            <EmailCapture 
+              variant="minimal"
+              tag="post-signup"
+              className="pt-2"
+            />
+            <p className="text-xs text-slate-500 text-center">
+              Or track a flight below to get started.
+            </p>
+          </section>
         )}
 
         {/* 1. Flight Input (Only show if no active trip) */}

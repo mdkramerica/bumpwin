@@ -1,6 +1,7 @@
 import Hero from "@/components/marketing/hero";
 import Link from "next/link";
-import { Plane, Clock, FileText, DollarSign, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
+import { Plane, FileText, DollarSign, AlertTriangle, CheckCircle2, ArrowRight, Users } from "lucide-react";
+import EmailCapture from "@/components/marketing/email-capture";
 
 export default function Home() {
   return (
@@ -164,6 +165,35 @@ export default function Home() {
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Email Capture Section - Bottom of Page */}
+      <section className="py-16 sm:py-24 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-lime-400/10 border border-lime-400/30 rounded-full text-xs font-medium text-lime-400 mb-4">
+              <Users className="w-3 h-3" />
+              Join 10,000+ travelers
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black font-display mb-4">
+              NEVER MISS OUT ON MONEY YOU'RE OWED
+            </h2>
+            <p className="text-slate-400">
+              Get instant alerts when your flights are delayed, cancelled, or overbooked. 
+              We'll tell you exactly what you're entitled to.
+            </p>
+          </div>
+          
+          <EmailCapture 
+            variant="card"
+            tag="homepage-bottom"
+            headline="Get Free Compensation Alerts"
+            subheadline="Know your rights before the airline tells you nothing."
+            buttonText="Subscribe Free"
+            showFirstName={true}
+            className="max-w-md mx-auto"
+          />
         </div>
       </section>
 
