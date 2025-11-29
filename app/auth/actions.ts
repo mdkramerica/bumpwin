@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
+export async function logout() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  revalidatePath("/", "layout");
+  redirect("/login");
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;

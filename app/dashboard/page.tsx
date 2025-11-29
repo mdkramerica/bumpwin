@@ -7,7 +7,8 @@ import ClaimLetter from "@/components/dashboard/claim-letter";
 import BountyCard from "@/components/viral/bounty-card";
 import SocialShare from "@/components/viral/social-share";
 import { addFlight } from "@/app/actions";
-import { Plus, History } from "lucide-react";
+import { logout } from "@/app/auth/actions";
+import { Plus, History, LogOut } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -70,7 +71,19 @@ export default async function DashboardPage({
           <Link href="/" className="text-xl font-bold font-display text-lime-400 hover:opacity-80 flex-shrink-0">
             BUMPWIN
           </Link>
-          <div className="text-xs text-slate-500 truncate max-w-[150px] sm:max-w-none">{user.email}</div>
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-slate-500 truncate max-w-[100px] sm:max-w-[150px]">{user.email}</div>
+            <form action={logout}>
+              <button 
+                type="submit"
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-slate-800"
+                title="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </form>
+          </div>
         </header>
 
         {errorMessage && (
