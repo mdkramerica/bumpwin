@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import MiseryMeter from "@/components/dashboard/misery-meter";
 import ClaimLock from "@/components/dashboard/claim-lock";
 import ClaimLetter from "@/components/dashboard/claim-letter";
+import FlightInfoCard from "@/components/dashboard/flight-info-card";
 import BountyCard from "@/components/viral/bounty-card";
 import SocialShare from "@/components/viral/social-share";
 import { addFlight } from "@/app/actions";
@@ -124,14 +125,24 @@ export default async function DashboardPage({
           </section>
         )}
 
-        {/* 2. The Misery Meter (Show if trip exists) */}
+        {/* 2. Flight Info Card + Misery Meter (Show if trip exists) */}
         {latestTrip && (
-          <section>
-             <div className="mb-6 text-center">
-                <h2 className="text-lg font-bold">{latestTrip.airline_code} {latestTrip.flight_number}</h2>
-                <p className="text-slate-500 text-sm">Monitoring Delay Status...</p>
+          <section className="space-y-6">
+             {/* Detailed Flight Info Card */}
+             <FlightInfoCard
+               airlineCode={latestTrip.airline_code}
+               flightNumber={latestTrip.flight_number}
+               scheduledDeparture={latestTrip.scheduled_departure}
+               status={latestTrip.status}
+               delayMinutes={currentDelay}
+               ticketPrice={latestTrip.ticket_price}
+             />
+             
+             {/* The Misery Meter */}
+             <div>
+               <p className="text-center text-slate-500 text-xs mb-3 uppercase tracking-wider">Delay Status</p>
+               <MiseryMeter delayMinutes={currentDelay} />
              </div>
-             <MiseryMeter delayMinutes={currentDelay} />
           </section>
         )}
 
