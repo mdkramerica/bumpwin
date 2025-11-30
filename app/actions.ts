@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { lookupFlightStatus, isFlightApiConfigured } from "@/lib/flight-api";
 
 // Issue types - now includes UPCOMING for future flight tracking
 type IssueType = "UPCOMING" | "DELAY" | "CANCELLATION" | "BUMPING";
@@ -82,12 +83,41 @@ export async function addFlight(formData: FormData) {
     });
   }
 
-  // 3. Create departure timestamp from date
-  const scheduledDeparture = new Date(`${flightDate}T12:00:00`).toISOString();
+  // 3. Get time from form or default to noon
+  const flightTime = (formData.get("flightTime") as string) || "12:00";
+  
+  // 4. Try to fetch live flight data if API is configured
+  let scheduledDeparture = new Date(`${flightDate}T${flightTime}:00`).toISOString();
+  let liveDelayMinutes = 0;
+  let liveStatus: string | null = null;
+  let dataSource: "live" | "manual" = "manual";
+  
+  if (isFlightApiConfigured()) {
+    try {
+      const liveData = await lookupFlightStatus(airline, flightNum, flightDate);
+      if (liveData.success && liveData.data) {
+        // Use live data
+        scheduledDeparture = liveData.data.scheduledDeparture || scheduledDeparture;
+        liveDelayMinutes = liveData.data.delayMinutes || 0;
+        liveStatus = liveData.data.status;
+        dataSource = "live";
+        console.log(`Live flight data fetched for ${airline}${flightNum}:`, liveData.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch live flight data:", error);
+    }
+  }
 
-  // 4. Determine trip status
+  // 5. Determine trip status - use live data if available
   let tripStatus: "UPCOMING" | "COMPLETED" | "CANCELED" = "UPCOMING";
-  if (issueType === "UPCOMING" || isUpcoming) {
+  
+  // If we have live status, use it
+  if (liveStatus === "cancelled") {
+    tripStatus = "CANCELED";
+    issueType = "CANCELLATION";
+  } else if (liveStatus === "landed") {
+    tripStatus = "COMPLETED";
+  } else if (issueType === "UPCOMING" || isUpcoming) {
     tripStatus = "UPCOMING";
   } else if (issueType === "CANCELLATION") {
     tripStatus = "CANCELED";
@@ -95,7 +125,17 @@ export async function addFlight(formData: FormData) {
     tripStatus = "COMPLETED";
   }
 
-  // 5. Save Trip to DB
+  // 6. Get delay from form (hours + minutes) OR use live data
+  const delayHoursStr = formData.get("delayHours") as string;
+  const delayMinsStr = formData.get("delayMins") as string;
+  const delayHours = delayHoursStr ? parseInt(delayHoursStr, 10) : 0;
+  const delayMins = delayMinsStr ? parseInt(delayMinsStr, 10) : 0;
+  const formDelayMinutes = (delayHours * 60) + delayMins;
+  
+  // Use live delay if available, otherwise use form input
+  const delayMinutes = liveDelayMinutes > 0 ? liveDelayMinutes : formDelayMinutes;
+
+  // 7. Save Trip to DB with issue_type and delay_minutes
   const { data: trip, error: tripError } = await supabase
     .from("trips")
     .insert({
@@ -105,6 +145,9 @@ export async function addFlight(formData: FormData) {
       scheduled_departure: scheduledDeparture,
       ticket_price: ticketPrice,
       status: tripStatus,
+      issue_type: issueType,
+      delay_minutes: delayMinutes,
+      data_source: dataSource,
     })
     .select()
     .single();
@@ -114,11 +157,10 @@ export async function addFlight(formData: FormData) {
     redirect("/dashboard?error=Failed to save trip.");
   }
 
-  // 6. For UPCOMING flights, don't create a claim yet - we'll create one if issues occur
+  // 7. For UPCOMING flights, don't create a claim yet - we'll create one if issues occur
   // For past issues, create a claim
   if (issueType !== "UPCOMING" && !isUpcoming) {
-    const mockDelayMinutes = issueType === "DELAY" ? 200 : issueType === "BUMPING" ? 200 : 0;
-    const estimatedPayout = calculateEstimatedCompensation(issueType, ticketPrice, mockDelayMinutes);
+    const estimatedPayout = calculateEstimatedCompensation(issueType, ticketPrice, delayMinutes || 200);
 
     const { error: claimError } = await supabase
       .from("claims")
@@ -135,7 +177,7 @@ export async function addFlight(formData: FormData) {
     }
   }
 
-  // 7. Log alert preference (for future email system)
+  // 8. Log alert preference (for future email system)
   if (enableAlerts) {
     console.log(`Alert enabled for trip ${trip.id}, user email: ${user.email}`);
     // TODO: Store alert preference in database or trigger welcome email

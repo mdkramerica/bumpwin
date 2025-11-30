@@ -243,3 +243,4 @@ curl -X POST 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/check-flight-sta
 5. **Price drop alerts** - Notify if flight gets cheaper
 6. **Gate change alerts** - Real-time gate updates
 
+

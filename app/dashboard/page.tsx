@@ -62,7 +62,8 @@ export default async function DashboardPage({
 
   const latestTrip = showNewForm ? null : trips?.[0];
   const latestClaim = latestTrip?.claims?.[0]; // Assuming 1:1 for MVP
-  const currentDelay = latestTrip ? 200 : 0; // Hardcoded "Winner" delay for demo if trip exists
+  // Use actual delay from database, default to 0 if not set
+  const currentDelay = latestTrip?.delay_minutes || 0;
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-6 pb-24">
@@ -146,29 +147,72 @@ export default async function DashboardPage({
                    />
                  </div>
                </div>
-               <div>
-                 <label className="block text-xs font-medium text-slate-400 mb-1">FLIGHT DATE</label>
-                 <input 
-                   name="flightDate" 
-                   type="date" 
-                   className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors [color-scheme:dark]"
-                   required
-                 />
-                 <p className="text-[10px] text-slate-500 mt-1">Future dates = we'll monitor & alert you. Past dates = file a claim.</p>
+               <div className="grid grid-cols-2 gap-3">
+                 <div>
+                   <label className="block text-xs font-medium text-slate-400 mb-1">FLIGHT DATE</label>
+                   <input 
+                     name="flightDate" 
+                     type="date" 
+                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors [color-scheme:dark]"
+                     required
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-slate-400 mb-1">SCHEDULED TIME</label>
+                   <input 
+                     name="flightTime" 
+                     type="time" 
+                     className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors [color-scheme:dark]"
+                   />
+                 </div>
                </div>
+               <p className="text-[10px] text-slate-500 -mt-2">Future dates = we'll monitor & alert you. Past dates = file a claim.</p>
                <div>
                  <label className="block text-xs font-medium text-slate-400 mb-1">STATUS <span className="text-slate-500">(What happened or will happen?)</span></label>
                  <select 
                    name="issueType"
+                   id="issueType"
                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors"
                    required
                  >
                    <option value="">Select status...</option>
                    <option value="UPCOMING">📅 Upcoming flight - monitor for issues</option>
-                   <option value="DELAY">⏰ Flight was delayed (3+ hours)</option>
+                   <option value="DELAY">⏰ Flight was delayed</option>
                    <option value="CANCELLATION">❌ Flight was cancelled</option>
                    <option value="BUMPING">🚫 I was involuntarily bumped</option>
                  </select>
+               </div>
+               
+               {/* Delay Duration - only shown when DELAY or BUMPING is selected (handled client-side) */}
+               <div id="delayDurationField">
+                 <label className="block text-xs font-medium text-slate-400 mb-1">DELAY DURATION <span className="text-slate-500">(how late did you arrive?)</span></label>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div className="relative">
+                     <input 
+                       name="delayHours" 
+                       type="number" 
+                       placeholder="0" 
+                       min="0"
+                       max="48"
+                       defaultValue="0"
+                       className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors"
+                     />
+                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">hours</span>
+                   </div>
+                   <div className="relative">
+                     <input 
+                       name="delayMins" 
+                       type="number" 
+                       placeholder="0" 
+                       min="0"
+                       max="59"
+                       defaultValue="0"
+                       className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-lime-400 outline-none transition-colors"
+                     />
+                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">mins</span>
+                   </div>
+                 </div>
+                 <p className="text-[10px] text-slate-500 mt-1">For bumping: how late you arrived at final destination vs original schedule</p>
                </div>
                <div>
                  <label className="block text-xs font-medium text-slate-400 mb-1">TICKET PRICE <span className="text-slate-500">(one-way, optional)</span></label>
@@ -220,6 +264,10 @@ export default async function DashboardPage({
                status={latestTrip.status}
                delayMinutes={currentDelay}
                ticketPrice={latestTrip.ticket_price}
+               isBumping={latestTrip.issue_type === "BUMPING"}
+               isCancelled={latestTrip.issue_type === "CANCELLATION"}
+               issueType={latestTrip.issue_type}
+               dataSource={latestTrip.data_source}
              />
              
              {/* The Misery Meter */}

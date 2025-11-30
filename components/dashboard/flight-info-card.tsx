@@ -1,6 +1,6 @@
 "use client";
 
-import { Plane, Calendar, Clock, AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
+import { Plane, Calendar, Clock, AlertTriangle, CheckCircle2, Info, XCircle, Radio, Edit3 } from "lucide-react";
 import { useState } from "react";
 
 // Airline name mapping
@@ -27,6 +27,8 @@ interface FlightInfoCardProps {
   ticketPrice?: number | null;
   isBumping?: boolean;
   isCancelled?: boolean;
+  issueType?: string | null;
+  dataSource?: "live" | "manual" | null;
 }
 
 export default function FlightInfoCard({
@@ -38,6 +40,8 @@ export default function FlightInfoCard({
   ticketPrice,
   isBumping = false,
   isCancelled = false,
+  issueType,
+  dataSource = "manual",
 }: FlightInfoCardProps) {
   const [showCompInfo, setShowCompInfo] = useState(false);
   
@@ -66,8 +70,21 @@ export default function FlightInfoCard({
     ? `${delayHours}h ${delayMins}m delayed` 
     : `${delayMins}m delayed`;
 
+  // Check if this is an upcoming flight being monitored
+  const isUpcoming = issueType === "UPCOMING" || status === "UPCOMING";
+  
   // Determine what compensation info to show
   const getCompensationInfo = () => {
+    // For upcoming flights, show monitoring status
+    if (isUpcoming) {
+      return {
+        eligible: false,
+        title: "MONITORING FLIGHT",
+        message: "We'll alert you if your flight is delayed, cancelled, or if you get bumped.",
+        type: "info" as const,
+      };
+    }
+    
     if (isBumping) {
       const fare = ticketPrice || 300;
       if (delayMinutes <= 60) {
@@ -114,6 +131,16 @@ export default function FlightInfoCard({
       };
     }
     
+    // For delays under 3 hours
+    if (isDelayed && delayMinutes > 0) {
+      return {
+        eligible: false,
+        title: "FLIGHT DELAYED",
+        message: `Your flight was delayed ${delayText}. US law does not require compensation for delays.`,
+        type: "warning" as const,
+      };
+    }
+    
     return null;
   };
 
@@ -135,19 +162,39 @@ export default function FlightInfoCard({
         
         {/* Status Badge */}
         <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-          isBumping
-            ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-            : isCancelled
-              ? "bg-red-500/20 text-red-400 border border-red-500/30"
-              : isSevereDelay 
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" 
-                : isDelayed 
-                  ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                  : "bg-lime-500/20 text-lime-400 border border-lime-500/30"
+          isUpcoming
+            ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+            : isBumping
+              ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+              : isCancelled
+                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                : isSevereDelay 
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" 
+                  : isDelayed 
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                    : "bg-lime-500/20 text-lime-400 border border-lime-500/30"
         }`}>
-          {isBumping ? "BUMPED" : isCancelled ? "CANCELLED" : isSevereDelay ? "SEVERE DELAY" : isDelayed ? "DELAYED" : status}
+          {isUpcoming ? "UPCOMING" : isBumping ? "BUMPED" : isCancelled ? "CANCELLED" : isSevereDelay ? "SEVERE DELAY" : isDelayed ? "DELAYED" : status}
         </div>
       </div>
+
+      {/* Data Source Indicator */}
+      {dataSource === "manual" && (
+        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-2">
+          <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-xs text-amber-400">
+            Manual entry — times may not reflect actual flight schedule
+          </span>
+        </div>
+      )}
+      {dataSource === "live" && (
+        <div className="px-4 py-2 bg-lime-500/10 border-b border-lime-500/20 flex items-center gap-2">
+          <Radio className="w-3.5 h-3.5 text-lime-400" />
+          <span className="text-xs text-lime-400">
+            Live data — updated from flight tracking API
+          </span>
+        </div>
+      )}
 
       {/* Flight Details Grid */}
       <div className="p-4 grid grid-cols-2 gap-4">
@@ -246,3 +293,4 @@ export default function FlightInfoCard({
     </div>
   );
 }
+

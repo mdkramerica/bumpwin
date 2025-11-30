@@ -185,3 +185,4 @@ export function getMaxPossibleCompensation(region: Region): { amount: number; cu
   return { amount: 600, currency: "EUR" }; // Max EU compensation
 }
 
+
