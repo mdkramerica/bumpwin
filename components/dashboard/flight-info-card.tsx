@@ -81,9 +81,20 @@ export default function FlightInfoCard({
 
   // Check if this is an upcoming flight being monitored
   const isUpcoming = issueType === "UPCOMING" || status === "UPCOMING";
+  const isCompleted = status === "COMPLETED";
   
   // Determine what compensation info to show
   const getCompensationInfo = () => {
+    // For completed flights, show completed status
+    if (isCompleted) {
+      return {
+        eligible: false,
+        title: "FLIGHT COMPLETED",
+        message: "This flight has landed. No issues were detected during the flight.",
+        type: "success" as const,
+      };
+    }
+    
     // For upcoming flights, show monitoring status
     if (isUpcoming) {
       return {
@@ -171,19 +182,21 @@ export default function FlightInfoCard({
         
         {/* Status Badge */}
         <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-          isUpcoming
-            ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-            : isBumping
-              ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-              : isCancelled
-                ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                : isSevereDelay 
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" 
-                  : isDelayed 
-                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                    : "bg-lime-500/20 text-lime-400 border border-lime-500/30"
+          isCompleted
+            ? "bg-lime-500/20 text-lime-400 border border-lime-500/30"
+            : isUpcoming
+              ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+              : isBumping
+                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                : isCancelled
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                  : isSevereDelay 
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" 
+                    : isDelayed 
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                      : "bg-lime-500/20 text-lime-400 border border-lime-500/30"
         }`}>
-          {isUpcoming ? "UPCOMING" : isBumping ? "BUMPED" : isCancelled ? "CANCELLED" : isSevereDelay ? "SEVERE DELAY" : isDelayed ? "DELAYED" : status}
+          {isCompleted ? "COMPLETED" : isUpcoming ? "UPCOMING" : isBumping ? "BUMPED" : isCancelled ? "CANCELLED" : isSevereDelay ? "SEVERE DELAY" : isDelayed ? "DELAYED" : status}
         </div>
       </div>
 

@@ -27,6 +27,7 @@ interface FlightStatus {
   status: "ON_TIME" | "DELAYED" | "CANCELLED" | "DEPARTED" | "ARRIVED";
   delayMinutes: number;
   isOverbooked?: boolean;
+  hasLanded?: boolean;
 }
 
 serve(async (req: Request) => {
@@ -81,6 +82,7 @@ serve(async (req: Request) => {
     const results = {
       checked: trips.length,
       alerts_sent: 0,
+      completed: 0,
       delays: 0,
       cancellations: 0,
       errors: 0,
@@ -95,8 +97,16 @@ serve(async (req: Request) => {
           trip.scheduled_departure
         );
 
+        // Track if flight has landed (before checkAndUpdateStatus modifies anything)
+        const hasLanded = flightStatus.hasLanded || flightStatus.status === "ARRIVED";
+
         // Check if status changed and needs alert
         const shouldAlert = await checkAndUpdateStatus(supabase, trip, flightStatus);
+
+        // Track completed flights
+        if (hasLanded) {
+          results.completed++;
+        }
 
         if (shouldAlert) {
           // Trigger alert email
@@ -177,6 +187,7 @@ async function getFlightStatus(
             status,
             delayMinutes: Math.max(0, delayMinutes),
             isOverbooked: false, // FlightAware doesn't provide this
+            hasLanded: status === "ARRIVED",
           };
         }
       }
@@ -187,26 +198,52 @@ async function getFlightStatus(
 
   // MVP: Return mock data based on random chance
   // In production, replace with real API integration
+  
+  // First check if the scheduled departure has passed - if so, mark as arrived
+  const departureTime = new Date(scheduledDeparture).getTime();
+  const now = Date.now();
+  const hoursSinceDeparture = (now - departureTime) / (1000 * 60 * 60);
+  
+  // If flight was scheduled more than 6 hours ago, assume it has landed
+  if (hoursSinceDeparture > 6) {
+    return { 
+      status: "ARRIVED", 
+      delayMinutes: 0,
+      hasLanded: true,
+    };
+  }
+  
+  // If flight departed 1-6 hours ago, it's likely in the air
+  if (hoursSinceDeparture > 1) {
+    return { 
+      status: "DEPARTED", 
+      delayMinutes: 0,
+      hasLanded: false,
+    };
+  }
+  
   const random = Math.random();
   
   // 70% on time, 20% delayed, 8% cancelled, 2% overbooked
   if (random < 0.70) {
-    return { status: "ON_TIME", delayMinutes: 0 };
+    return { status: "ON_TIME", delayMinutes: 0, hasLanded: false };
   } else if (random < 0.90) {
     // Random delay between 30 min and 5 hours
     const delayMinutes = Math.floor(Math.random() * 270) + 30;
     return { 
       status: delayMinutes >= 180 ? "DELAYED" : "ON_TIME", 
-      delayMinutes 
+      delayMinutes,
+      hasLanded: false,
     };
   } else if (random < 0.98) {
-    return { status: "CANCELLED", delayMinutes: 0 };
+    return { status: "CANCELLED", delayMinutes: 0, hasLanded: false };
   } else {
     // Overbooked scenario
     return { 
       status: "DELAYED", 
       delayMinutes: Math.floor(Math.random() * 180) + 60,
-      isOverbooked: true 
+      isOverbooked: true,
+      hasLanded: false,
     };
   }
 }
@@ -220,6 +257,24 @@ async function checkAndUpdateStatus(
   trip: any,
   newStatus: FlightStatus
 ): Promise<boolean> {
+  
+  // Check if flight has landed - update status to COMPLETED
+  const hasLanded = newStatus.hasLanded || newStatus.status === "ARRIVED";
+  
+  if (hasLanded) {
+    // Update trip to COMPLETED - flight has landed, no longer needs monitoring
+    await supabase
+      .from("trips")
+      .update({ 
+        status: "COMPLETED",
+      })
+      .eq("id", trip.id);
+    
+    console.log(`Trip ${trip.id} marked as COMPLETED - flight has landed`);
+    
+    // No alert needed for normal landing
+    return false;
+  }
   
   // Only alert for significant changes
   const significantDelay = newStatus.delayMinutes >= 180; // 3+ hours
