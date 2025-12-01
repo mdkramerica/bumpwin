@@ -51,16 +51,39 @@ export default async function FlightDetailPage({
     redirect("/dashboard?error=Flight not found.");
   }
 
+  // Check if an UPCOMING flight's scheduled departure has passed
+  const now = new Date();
+  const scheduledDeparture = new Date(trip.scheduled_departure);
+  const bufferHours = 6; // Buffer for flight duration
+  const cutoffTime = new Date(scheduledDeparture.getTime() + bufferHours * 60 * 60 * 1000);
+  const isFlightInPast = now > cutoffTime;
+  
+  // Auto-correct status for past UPCOMING flights
+  let effectiveStatus = trip.status;
+  if (trip.status === "UPCOMING" && trip.issue_type === "UPCOMING" && isFlightInPast) {
+    effectiveStatus = "COMPLETED";
+    // Update database in background
+    supabase
+      .from("trips")
+      .update({ status: "COMPLETED" })
+      .eq("id", trip.id)
+      .then(({ error }) => {
+        if (error) {
+          console.error("Failed to auto-update trip status:", error);
+        }
+      });
+  }
+
   const claim = trip.claims?.[0];
   const airlineName = AIRLINE_NAMES[trip.airline_code] || trip.airline_code;
   
   // Determine claim type from trip status or claim
   const claimType: "bumping" | "delay" | "cancellation" = 
     claim?.claim_type || 
-    (trip.status === "CANCELED" ? "cancellation" : "delay");
+    (effectiveStatus === "CANCELED" ? "cancellation" : "delay");
   
-  // For demo, use a mock delay. In production, this would come from flight API
-  const delayMinutes = trip.status === "UPCOMING" ? 0 : 200;
+  // Use delay from trip data, or 0 for upcoming flights
+  const delayMinutes = effectiveStatus === "UPCOMING" ? 0 : (trip.delay_minutes || 0);
   
   // Format dates
   const scheduledDate = new Date(trip.scheduled_departure);
@@ -78,7 +101,7 @@ export default async function FlightDetailPage({
 
   // Status badge styling
   const getStatusBadge = () => {
-    switch (trip.status) {
+    switch (effectiveStatus) {
       case "UPCOMING":
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
@@ -176,7 +199,7 @@ export default async function FlightDetailPage({
           )}
 
           {/* Status Message for Upcoming */}
-          {trip.status === "UPCOMING" && (
+          {effectiveStatus === "UPCOMING" && (
             <div className="p-4 border-t border-slate-700 bg-blue-500/5">
               <div className="flex items-start gap-3">
                 <Timer className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -192,7 +215,7 @@ export default async function FlightDetailPage({
           )}
 
           {/* Delay Info for Completed/Delayed */}
-          {trip.status === "COMPLETED" && delayMinutes > 0 && (
+          {effectiveStatus === "COMPLETED" && delayMinutes > 0 && (
             <div className="p-4 border-t border-slate-700 bg-orange-500/5">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
@@ -211,7 +234,7 @@ export default async function FlightDetailPage({
           )}
 
           {/* Cancellation Info */}
-          {trip.status === "CANCELED" && (
+          {effectiveStatus === "CANCELED" && (
             <div className="p-4 border-t border-slate-700 bg-red-500/5">
               <div className="flex items-start gap-3">
                 <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
@@ -228,7 +251,7 @@ export default async function FlightDetailPage({
         </div>
 
         {/* Misery Meter (for non-upcoming flights) */}
-        {trip.status !== "UPCOMING" && (
+        {effectiveStatus !== "UPCOMING" && (
           <div>
             <p className="text-center text-slate-500 text-xs mb-3 uppercase tracking-wider">Delay Status</p>
             <MiseryMeter delayMinutes={delayMinutes} />
@@ -236,7 +259,7 @@ export default async function FlightDetailPage({
         )}
 
         {/* Claim Section */}
-        {claim && !claim.is_unlocked && trip.status !== "UPCOMING" && (
+        {claim && !claim.is_unlocked && effectiveStatus !== "UPCOMING" && (
           <section>
             <ClaimLock claimId={claim.id} estimatedPayout={claim.estimated_payout || 600} />
           </section>
@@ -257,7 +280,7 @@ export default async function FlightDetailPage({
         )}
 
         {/* No Claim Yet (Upcoming Flight) */}
-        {!claim && trip.status === "UPCOMING" && (
+        {!claim && effectiveStatus === "UPCOMING" && (
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 text-center">
             <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Timer className="w-8 h-8 text-blue-400" />
@@ -268,6 +291,22 @@ export default async function FlightDetailPage({
             </p>
             <div className="text-xs text-slate-500">
               Alerts enabled • Monitoring active
+            </div>
+          </div>
+        )}
+
+        {/* Flight Completed - No issues detected (for auto-completed UPCOMING flights) */}
+        {!claim && effectiveStatus === "COMPLETED" && trip.issue_type === "UPCOMING" && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 text-center">
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-8 h-8 text-green-400" />
+            </div>
+            <h3 className="font-bold text-lg mb-2">Flight Completed</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              This flight has landed. No significant issues were detected during monitoring.
+            </p>
+            <div className="text-xs text-slate-500">
+              Have a great trip!
             </div>
           </div>
         )}

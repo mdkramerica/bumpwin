@@ -79,9 +79,17 @@ export default function FlightInfoCard({
     ? `${delayHours}h ${delayMins}m delayed` 
     : `${delayMins}m delayed`;
 
+  // Check if the scheduled departure date is in the past (with 6-hour buffer for flight duration)
+  const now = new Date();
+  const bufferHours = 6;
+  const cutoffTime = new Date(departureDate.getTime() + bufferHours * 60 * 60 * 1000);
+  const isFlightInPast = now > cutoffTime;
+
   // Check if this is an upcoming flight being monitored
-  const isUpcoming = issueType === "UPCOMING" || status === "UPCOMING";
-  const isCompleted = status === "COMPLETED";
+  // Only consider it "upcoming" if the status says so AND the flight hasn't passed
+  const isUpcoming = (issueType === "UPCOMING" || status === "UPCOMING") && !isFlightInPast;
+  // Mark as completed if status says so, OR if it was upcoming but the flight date has passed
+  const isCompleted = status === "COMPLETED" || (issueType === "UPCOMING" && isFlightInPast);
   
   // Determine what compensation info to show
   const getCompensationInfo = () => {

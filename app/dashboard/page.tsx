@@ -29,11 +29,44 @@ export default async function DashboardPage({
   }
 
   // Fetch User's Data
-  const { data: trips } = await supabase
+  const { data: rawTrips } = await supabase
     .from("trips")
     .select("*, claims(*)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  // Auto-fix any UPCOMING trips that have already passed their scheduled departure
+  const now = new Date();
+  const tripsToUpdate: string[] = [];
+  
+  const trips = rawTrips?.map(trip => {
+    // If status is UPCOMING but scheduled_departure is in the past, mark as COMPLETED
+    if (trip.status === "UPCOMING" && trip.issue_type === "UPCOMING") {
+      const scheduledDeparture = new Date(trip.scheduled_departure);
+      // Give a 6-hour buffer after scheduled departure (flight duration + buffer)
+      const bufferHours = 6;
+      const cutoffTime = new Date(scheduledDeparture.getTime() + bufferHours * 60 * 60 * 1000);
+      
+      if (now > cutoffTime) {
+        tripsToUpdate.push(trip.id);
+        return { ...trip, status: "COMPLETED" as const };
+      }
+    }
+    return trip;
+  }) || [];
+
+  // Update the database in background for any trips that need status correction
+  if (tripsToUpdate.length > 0) {
+    supabase
+      .from("trips")
+      .update({ status: "COMPLETED" })
+      .in("id", tripsToUpdate)
+      .then(({ error }) => {
+        if (error) {
+          console.error("Failed to auto-update trip statuses:", error);
+        }
+      });
+  }
 
   // Also fetch User profile for Referral Code
   // Note: If user doesn't exist in users table yet (trigger might not have run), handle gracefully
