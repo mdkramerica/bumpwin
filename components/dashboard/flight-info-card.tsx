@@ -47,6 +47,15 @@ export default function FlightInfoCard({
   
   const airlineName = AIRLINE_NAMES[airlineCode.toUpperCase()] || airlineCode;
   const departureDate = new Date(scheduledDeparture);
+  const manualScheduledTime =
+    dataSource === "manual" && !Number.isNaN(departureDate.getTime())
+      ? departureDate.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "UTC", // stored as UTC when entered manually, so keep original value
+        })
+      : null;
   
   const formattedDate = departureDate.toLocaleDateString("en-US", {
     weekday: "short",
@@ -55,7 +64,7 @@ export default function FlightInfoCard({
     year: "numeric",
   });
   
-  const formattedTime = departureDate.toLocaleTimeString("en-US", {
+  const formattedTime = manualScheduledTime || departureDate.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
