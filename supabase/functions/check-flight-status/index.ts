@@ -21,7 +21,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const FLIGHTAWARE_API_KEY = Deno.env.get("FLIGHTAWARE_API_KEY");
+const AVIATIONSTACK_API_KEY = Deno.env.get("AVIATIONSTACK_API_KEY");
 
 interface FlightStatus {
   status: "ON_TIME" | "DELAYED" | "CANCELLED" | "DEPARTED" | "ARRIVED";
@@ -147,10 +147,8 @@ serve(async (req: Request) => {
 });
 
 /**
- * Get flight status from external API
- * 
- * For MVP: Returns mock data
- * For Production: Integrate with FlightAware, AviationStack, or similar
+ * Get flight status from AviationStack API
+ * Falls back to time-based heuristic if API unavailable
  */
 async function getFlightStatus(
   airlineCode: string,
@@ -158,51 +156,66 @@ async function getFlightStatus(
   scheduledDeparture: string
 ): Promise<FlightStatus> {
   
-  // If we have a FlightAware API key, use real data
-  if (FLIGHTAWARE_API_KEY) {
-    try {
-      const response = await fetch(
-        `https://aeroapi.flightaware.com/aeroapi/flights/${airlineCode}${flightNumber}`,
-        {
-          headers: {
-            "x-apikey": FLIGHTAWARE_API_KEY,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        // Parse FlightAware response (structure varies)
-        const flight = data.flights?.[0];
-        if (flight) {
-          const delayMinutes = flight.departure_delay || 0;
-          let status: FlightStatus["status"] = "ON_TIME";
-          
-          if (flight.cancelled) status = "CANCELLED";
-          else if (delayMinutes >= 180) status = "DELAYED";
-          else if (flight.actual_off) status = "DEPARTED";
-          else if (flight.actual_on) status = "ARRIVED";
-
-          return {
-            status,
-            delayMinutes: Math.max(0, delayMinutes),
-            isOverbooked: false, // FlightAware doesn't provide this
-            hasLanded: status === "ARRIVED",
-          };
-        }
-      }
-    } catch (err) {
-      console.error("FlightAware API error:", err);
-    }
-  }
-
-  // MVP: Return mock data based on random chance
-  // In production, replace with real API integration
-  
-  // First check if the scheduled departure has passed - if so, mark as arrived
   const departureTime = new Date(scheduledDeparture).getTime();
   const now = Date.now();
   const hoursSinceDeparture = (now - departureTime) / (1000 * 60 * 60);
+  const flightDate = new Date(scheduledDeparture).toISOString().split('T')[0];
+  
+  // Try AviationStack API for real-time data
+  if (AVIATIONSTACK_API_KEY) {
+    try {
+      const fullFlightNumber = `${airlineCode}${flightNumber}`;
+      const url = `http://api.aviationstack.com/v1/flights?access_key=${AVIATIONSTACK_API_KEY}&flight_iata=${fullFlightNumber}`;
+      
+      const response = await fetch(url);
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.data && result.data.length > 0) {
+          // Find flight matching our date
+          const matchingFlight = result.data.find((f: any) => {
+            const fDate = f.flight_date || f.departure?.scheduled?.split('T')[0];
+            return fDate === flightDate;
+          });
+          
+          if (matchingFlight) {
+            const flight = matchingFlight;
+            const delayMinutes = flight.departure?.delay || flight.arrival?.delay || 0;
+            const rawStatus = flight.flight_status?.toLowerCase();
+            
+            let status: FlightStatus["status"] = "ON_TIME";
+            let hasLanded = false;
+            
+            if (rawStatus === "cancelled") {
+              status = "CANCELLED";
+            } else if (rawStatus === "landed") {
+              status = "ARRIVED";
+              hasLanded = true;
+            } else if (rawStatus === "active" || rawStatus === "en-route") {
+              status = "DEPARTED";
+            } else if (delayMinutes >= 180) {
+              status = "DELAYED";
+            }
+
+            console.log(`AviationStack: ${fullFlightNumber} on ${flightDate} -> ${status}, delay: ${delayMinutes}min`);
+
+            return {
+              status,
+              delayMinutes: Math.max(0, delayMinutes),
+              isOverbooked: false,
+              hasLanded,
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.error("AviationStack API error:", err);
+    }
+  }
+
+  // Fallback: Time-based heuristic when API unavailable or flight not found
+  console.log(`Using time-based fallback for flight, ${hoursSinceDeparture.toFixed(1)} hours since departure`);
   
   // If flight was scheduled more than 6 hours ago, assume it has landed
   if (hoursSinceDeparture > 6) {
@@ -222,30 +235,12 @@ async function getFlightStatus(
     };
   }
   
-  const random = Math.random();
-  
-  // 70% on time, 20% delayed, 8% cancelled, 2% overbooked
-  if (random < 0.70) {
-    return { status: "ON_TIME", delayMinutes: 0, hasLanded: false };
-  } else if (random < 0.90) {
-    // Random delay between 30 min and 5 hours
-    const delayMinutes = Math.floor(Math.random() * 270) + 30;
-    return { 
-      status: delayMinutes >= 180 ? "DELAYED" : "ON_TIME", 
-      delayMinutes,
-      hasLanded: false,
-    };
-  } else if (random < 0.98) {
-    return { status: "CANCELLED", delayMinutes: 0, hasLanded: false };
-  } else {
-    // Overbooked scenario
-    return { 
-      status: "DELAYED", 
-      delayMinutes: Math.floor(Math.random() * 180) + 60,
-      isOverbooked: true,
-      hasLanded: false,
-    };
-  }
+  // Flight is upcoming or just departed
+  return { 
+    status: "ON_TIME", 
+    delayMinutes: 0, 
+    hasLanded: false 
+  };
 }
 
 /**
