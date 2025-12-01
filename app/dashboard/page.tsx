@@ -353,6 +353,10 @@ export default async function DashboardPage({
                         <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400">
                           UPCOMING
                         </span>
+                      ) : trip.status === "COMPLETED" ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-lime-500/10 text-lime-400">
+                          COMPLETED
+                        </span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-slate-700 text-slate-400">
                           {trip.status}
