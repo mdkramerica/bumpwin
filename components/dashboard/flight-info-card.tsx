@@ -1,6 +1,6 @@
 "use client";
 
-import { Plane, Calendar, Clock, AlertTriangle, CheckCircle2, Info, XCircle, Radio, Edit3 } from "lucide-react";
+import { Plane, Calendar, Clock, AlertTriangle, CheckCircle2, Info, Radio, Edit3 } from "lucide-react";
 import { useState } from "react";
 
 // Airline name mapping
@@ -27,7 +27,6 @@ interface FlightInfoCardProps {
   ticketPrice?: number | null;
   isBumping?: boolean;
   isCancelled?: boolean;
-  issueType?: string | null;
   dataSource?: "live" | "manual" | null;
 }
 
@@ -40,7 +39,6 @@ export default function FlightInfoCard({
   ticketPrice,
   isBumping = false,
   isCancelled = false,
-  issueType,
   dataSource = "manual",
 }: FlightInfoCardProps) {
   const [showCompInfo, setShowCompInfo] = useState(false);
@@ -79,8 +77,9 @@ export default function FlightInfoCard({
     ? `${delayHours}h ${delayMins}m delayed` 
     : `${delayMins}m delayed`;
 
-  // Check if this is an upcoming flight being monitored
-  const isUpcoming = issueType === "UPCOMING" || status === "UPCOMING";
+  // Status is now determined by parent components (dashboard/flight page) using API
+  // The parent checks the flight API and passes the correct status
+  const isUpcoming = status === "UPCOMING";
   const isCompleted = status === "COMPLETED";
   
   // Determine what compensation info to show

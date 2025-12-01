@@ -107,7 +107,18 @@ async function fetchFromAviationStack(
     const matchingFlight = result.data.find((f: any) => {
       const flightDateStr = f.flight_date || f.departure?.scheduled?.split('T')[0];
       return flightDateStr === targetDate;
-    }) || result.data[0];
+    });
+
+    // If no flight matches our target date, don't use wrong flight data
+    // AviationStack free tier only returns current flights, not historical
+    if (!matchingFlight) {
+      console.log(`No flight found for date ${targetDate}, API returned flights for other dates`);
+      return {
+        success: false,
+        error: `Flight not found for date ${targetDate}. Historical flight data not available.`,
+        source: 'aviationstack',
+      };
+    }
 
     const flight = matchingFlight;
     

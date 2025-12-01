@@ -11,6 +11,7 @@ import EmailCapture from "@/components/marketing/email-capture";
 import { addFlight } from "@/app/actions";
 import { logout } from "@/app/auth/actions";
 import { Plus, History, LogOut, Plane, ChevronRight, Bell } from "lucide-react";
+import { lookupFlightStatus, isFlightApiConfigured } from "@/lib/flight-api";
 
 export default async function DashboardPage({
   searchParams,
@@ -29,11 +30,103 @@ export default async function DashboardPage({
   }
 
   // Fetch User's Data
-  const { data: trips } = await supabase
+  const { data: rawTrips } = await supabase
     .from("trips")
     .select("*, claims(*)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  // Check UPCOMING trips via API to get real flight status
+  const now = new Date();
+  const tripsToUpdate: { id: string; status: string; delay_minutes?: number }[] = [];
+  
+  // Process trips and check API for UPCOMING flights
+  const trips = await Promise.all(
+    (rawTrips || []).map(async (trip) => {
+      // Only check UPCOMING flights that might need status updates
+      if (trip.status === "UPCOMING" && trip.issue_type === "UPCOMING") {
+        const scheduledDeparture = new Date(trip.scheduled_departure);
+        const flightDate = scheduledDeparture.toISOString().split('T')[0];
+        
+        // Check if flight API is configured and try to get real status
+        if (isFlightApiConfigured()) {
+          try {
+            const result = await lookupFlightStatus(
+              trip.airline_code,
+              trip.flight_number,
+              flightDate
+            );
+            
+            if (result.success && result.data) {
+              const liveStatus = result.data.status;
+              const delayMinutes = result.data.delayMinutes || 0;
+              
+              // Update based on live API status
+              if (liveStatus === 'landed') {
+                tripsToUpdate.push({ 
+                  id: trip.id, 
+                  status: "COMPLETED",
+                  delay_minutes: delayMinutes 
+                });
+                return { 
+                  ...trip, 
+                  status: "COMPLETED" as const,
+                  delay_minutes: delayMinutes,
+                  data_source: "live" as const
+                };
+              } else if (liveStatus === 'cancelled') {
+                tripsToUpdate.push({ id: trip.id, status: "CANCELED" });
+                return { 
+                  ...trip, 
+                  status: "CANCELED" as const,
+                  issue_type: "CANCELLATION",
+                  data_source: "live" as const
+                };
+              } else if (delayMinutes > 0) {
+                // Flight is delayed but not yet landed
+                return {
+                  ...trip,
+                  delay_minutes: delayMinutes,
+                  data_source: "live" as const
+                };
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to fetch live status for trip ${trip.id}:`, error);
+          }
+        }
+        
+        // Fallback: If API not available, use time-based heuristic
+        // If scheduled departure + 6 hours has passed, assume completed
+        const bufferHours = 6;
+        const cutoffTime = new Date(scheduledDeparture.getTime() + bufferHours * 60 * 60 * 1000);
+        
+        if (now > cutoffTime) {
+          tripsToUpdate.push({ id: trip.id, status: "COMPLETED" });
+          return { ...trip, status: "COMPLETED" as const };
+        }
+      }
+      return trip;
+    })
+  );
+
+  // Update the database in background for any trips that need status correction
+  if (tripsToUpdate.length > 0) {
+    for (const update of tripsToUpdate) {
+      supabase
+        .from("trips")
+        .update({ 
+          status: update.status,
+          ...(update.delay_minutes !== undefined && { delay_minutes: update.delay_minutes })
+        })
+        .eq("id", update.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error(`Failed to auto-update trip ${update.id}:`, error);
+          }
+        });
+    }
+  }
 
   // Also fetch User profile for Referral Code
   // Note: If user doesn't exist in users table yet (trigger might not have run), handle gracefully
@@ -266,7 +359,6 @@ export default async function DashboardPage({
                ticketPrice={latestTrip.ticket_price}
                isBumping={latestTrip.issue_type === "BUMPING"}
                isCancelled={latestTrip.issue_type === "CANCELLATION"}
-               issueType={latestTrip.issue_type}
                dataSource={latestTrip.data_source}
              />
              
