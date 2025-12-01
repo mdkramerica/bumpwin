@@ -2,11 +2,11 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plane, Calendar, Clock, DollarSign, AlertTriangle, CheckCircle2, XCircle, Timer } from "lucide-react";
-import FlightInfoCard from "@/components/dashboard/flight-info-card";
 import MiseryMeter from "@/components/dashboard/misery-meter";
 import ClaimLock from "@/components/dashboard/claim-lock";
 import ClaimLetter from "@/components/dashboard/claim-letter";
 import SocialShare from "@/components/viral/social-share";
+import { lookupFlightStatus, isFlightApiConfigured } from "@/lib/flight-api";
 
 // Airline name mapping
 const AIRLINE_NAMES: Record<string, string> = {
@@ -51,39 +51,91 @@ export default async function FlightDetailPage({
     redirect("/dashboard?error=Flight not found.");
   }
 
-  // Check if an UPCOMING flight's scheduled departure has passed
+  // Check flight status via API for UPCOMING flights
   const now = new Date();
   const scheduledDeparture = new Date(trip.scheduled_departure);
-  const bufferHours = 6; // Buffer for flight duration
-  const cutoffTime = new Date(scheduledDeparture.getTime() + bufferHours * 60 * 60 * 1000);
-  const isFlightInPast = now > cutoffTime;
+  const flightDate = scheduledDeparture.toISOString().split('T')[0];
   
-  // Auto-correct status for past UPCOMING flights
   let effectiveStatus = trip.status;
-  if (trip.status === "UPCOMING" && trip.issue_type === "UPCOMING" && isFlightInPast) {
-    effectiveStatus = "COMPLETED";
-    // Update database in background
-    supabase
-      .from("trips")
-      .update({ status: "COMPLETED" })
-      .eq("id", trip.id)
-      .then(({ error }) => {
-        if (error) {
-          console.error("Failed to auto-update trip status:", error);
+  let effectiveDelayMinutes = trip.delay_minutes || 0;
+  
+  // For UPCOMING flights, check the API for real status
+  if (trip.status === "UPCOMING" && trip.issue_type === "UPCOMING") {
+    if (isFlightApiConfigured()) {
+      try {
+        const result = await lookupFlightStatus(
+          trip.airline_code,
+          trip.flight_number,
+          flightDate
+        );
+        
+        if (result.success && result.data) {
+          const liveStatus = result.data.status;
+          effectiveDelayMinutes = result.data.delayMinutes || 0;
+          
+          if (liveStatus === 'landed') {
+            effectiveStatus = "COMPLETED";
+            // Update database in background
+            supabase
+              .from("trips")
+              .update({ 
+                status: "COMPLETED",
+                delay_minutes: effectiveDelayMinutes,
+                data_source: "live"
+              })
+              .eq("id", trip.id)
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Failed to auto-update trip status:", error);
+                }
+              });
+          } else if (liveStatus === 'cancelled') {
+            effectiveStatus = "CANCELED";
+            supabase
+              .from("trips")
+              .update({ 
+                status: "CANCELED",
+                issue_type: "CANCELLATION",
+                data_source: "live"
+              })
+              .eq("id", trip.id)
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Failed to auto-update trip status:", error);
+                }
+              });
+          }
         }
-      });
+      } catch (error) {
+        console.error("Failed to fetch live flight status:", error);
+      }
+    }
+    
+    // Fallback: If API not available, use time-based heuristic
+    if (effectiveStatus === "UPCOMING") {
+      const bufferHours = 6;
+      const cutoffTime = new Date(scheduledDeparture.getTime() + bufferHours * 60 * 60 * 1000);
+      
+      if (now > cutoffTime) {
+        effectiveStatus = "COMPLETED";
+        supabase
+          .from("trips")
+          .update({ status: "COMPLETED" })
+          .eq("id", trip.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Failed to auto-update trip status:", error);
+            }
+          });
+      }
+    }
   }
 
   const claim = trip.claims?.[0];
   const airlineName = AIRLINE_NAMES[trip.airline_code] || trip.airline_code;
   
-  // Determine claim type from trip status or claim
-  const claimType: "bumping" | "delay" | "cancellation" = 
-    claim?.claim_type || 
-    (effectiveStatus === "CANCELED" ? "cancellation" : "delay");
-  
-  // Use delay from trip data, or 0 for upcoming flights
-  const delayMinutes = effectiveStatus === "UPCOMING" ? 0 : (trip.delay_minutes || 0);
+  // Use delay from API or trip data
+  const delayMinutes = effectiveStatus === "UPCOMING" ? 0 : effectiveDelayMinutes;
   
   // Format dates
   const scheduledDate = new Date(trip.scheduled_departure);
